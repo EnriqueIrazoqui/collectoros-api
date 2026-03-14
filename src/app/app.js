@@ -11,24 +11,30 @@ const notFoundMiddleware = require("../middlewares/not-found.middleware");
 const errorMiddleware = require("../middlewares/error.middleware");
 
 function createApp() {
-    const app = express();
+  const app = express();
 
-    app.use(helmet());
-    app.use(cors());
-    app.use(morgan("dev"));
-    app.use(express.json());
-    app.use(express.urlencoded({extended: true}));
+  app.use(helmet());
+  app.use(cors());
+  app.use(morgan("dev"));
+  app.use(express.json());
+  app.use(express.urlencoded({ extended: true }));
 
-    app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
-    app.use("/api/admin/queues", createBullBoardRouter());
+  app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+  app.use("/api/admin/queues", createBullBoardRouter());
 
-    app.use("/api/v1", routes);
+  app.use("/api/v1", routes);
 
-    app.use(notFoundMiddleware);
-    app.use(errorMiddleware);
-    
+  app.use(notFoundMiddleware);
+  app.use(errorMiddleware);
 
-    return app;
+  app.use(
+    cors({
+      origin: "http://localhost:5173",
+      credentials: true,
+    }),
+  );
+
+  return app;
 }
 
 module.exports = createApp;
