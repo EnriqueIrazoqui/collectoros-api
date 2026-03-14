@@ -12,14 +12,33 @@ datasource db {
 }
 
 model User {
-  id  Int @id @default(autoincrement())
-  email String @unique
-  passwordHash String @map("password_hash")
-  displayName String @map("display_name")
-  createdAt  DateTime @default(now()) @map("created_at")
-  updatedAt  DateTime @updatedAt @map("updated_at")
+  id           Int      @id @default(autoincrement())
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  displayName  String   @map("display_name")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  inventoryItems InventoryItem[]
 
   @@map("users")
 }
 
+model InventoryItem {
+  id                    Int       @id @default(autoincrement())
+  userId                Int       @map("user_id")
+  name                  String
+  category              String
+  description           String?
+  purchasePrice         Float?    @map("purchase_price")
+  purchaseDate          DateTime? @map("purchase_date")
+  currentEstimatedValue Float?    @map("current_estimated_value")
+  quantity              Int       @default(1)
+  condition             String?
+  createdAt             DateTime  @default(now()) @map("created_at")
+  updatedAt             DateTime  @updatedAt @map("updated_at")
 
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("inventory_items")
+}

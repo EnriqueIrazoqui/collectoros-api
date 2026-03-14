@@ -121,6 +121,7 @@ const swaggerDefinition = {
   tags: [
     { name: "Health", description: "Health check endpoints" },
     { name: "Auth", description: "Authentication endpoints" },
+    { name: "Inventory", description: "Inventory management endpoints" },
   ],
 };
 
