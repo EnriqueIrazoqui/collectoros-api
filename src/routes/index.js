@@ -7,6 +7,7 @@ const wishlistRoutes = require("../modules/wishlist/wishlist.routes");
 const analyticsRoutes = require("../modules/analytics/analytics.routes");
 const alertsRoutes = require("../modules/alerts/alerts.routes");
 const forecastRoutes = require("../modules/forecast/forecast.routes");
+const dashboardRoutes = require("../modules/dashboard/dashboard.routes");
 
 const router = express.Router();
 
@@ -18,5 +19,6 @@ router.use("/wishlist", wishlistRoutes);
 router.use("/analytics", analyticsRoutes);
 router.use("/alerts", alertsRoutes);
 router.use("/forecast", forecastRoutes);
+router.use("/dashboard", dashboardRoutes);
 
 module.exports = router;
