@@ -1,4 +1,3 @@
-
 {
   "name": "collectoros-api",
   "version": "1.0.0",
@@ -21,6 +20,8 @@
     "jsonwebtoken": "^9.0.3",
     "morgan": "^1.10.1",
     "pg": "^8.20.0",
+    "swagger-jsdoc": "^6.2.8",
+    "swagger-ui-express": "^5.0.1",
     "zod": "^4.3.6"
   },
   "devDependencies": {

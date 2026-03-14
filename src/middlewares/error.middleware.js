@@ -1,4 +1,4 @@
-const {ZodError} = require("zod");
+const { ZodError } = require("zod");
 
 function errorMiddleware(error, request, response, next) {
   console.error(error);
@@ -18,6 +18,7 @@ function errorMiddleware(error, request, response, next) {
     return response.status(error.statusCode).json({
       ok: false,
       message: error.message,
+      ...(error.details ? { details: error.details } : {}),
     });
   }
 
@@ -27,4 +28,4 @@ function errorMiddleware(error, request, response, next) {
   });
 }
 
-module.exports = errorMiddleware
+module.exports = errorMiddleware;
