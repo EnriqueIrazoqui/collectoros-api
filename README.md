@@ -49,6 +49,8 @@ src/
 └── routes/
     └── index.js
 
+```
+
 ## Workflow
 develop → feature/* → develop → main
 

@@ -123,6 +123,7 @@ const swaggerDefinition = {
     { name: "Auth", description: "Authentication endpoints" },
     { name: "Inventory", description: "Inventory management endpoints" },
     { name: "Price History", description: "Price tracking history endpoints" },
+    { name: "Wishlist", description: "Wishlist management endpoints" },
   ],
 };
 

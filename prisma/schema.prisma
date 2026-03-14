@@ -20,6 +20,7 @@ model User {
   updatedAt    DateTime @updatedAt @map("updated_at")
 
   inventoryItems InventoryItem[]
+  wishlistItems  WishlistItem[]
 
   @@map("users")
 }
@@ -54,4 +55,23 @@ model PriceHistory {
   item InventoryItem @relation(fields: [itemId], references: [id])
 
   @@map("price_history")
+}
+
+model WishlistItem {
+  id                   Int      @id @default(autoincrement())
+  userId               Int      @map("user_id")
+  name                 String
+  category             String
+  description          String?
+  targetPrice          Float?   @map("target_price")
+  currentObservedPrice Float?   @map("current_observed_price")
+  priority             String?
+  purchaseUrl          String?  @map("purchase_url")
+  notes                String?
+  createdAt            DateTime @default(now()) @map("created_at")
+  updatedAt            DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("wishlist_items")
 }
