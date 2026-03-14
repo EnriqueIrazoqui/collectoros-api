@@ -127,6 +127,7 @@ const swaggerDefinition = {
     { name: "Analytics", description: "Analytics summary endpoints" },
     { name: "Alerts", description: "Alerts and opportunities endpoints" },
     { name: "Forecast", description: "Forecast and price projection endpoints" },
+    { name: "Dashboard", description: "Dashboard aggregated endpoints" },
   ],
 };
 

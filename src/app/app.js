@@ -3,6 +3,7 @@ const cors = require("cors");
 const helmet = require("helmet");
 const morgan = require("morgan");
 const swaggerUi = require("swagger-ui-express");
+const createBullBoardRouter = require("../admin/bull-board");
 
 const routes = require("../routes");
 const swaggerSpec = require("../docs/swagger");
@@ -19,11 +20,13 @@ function createApp() {
     app.use(express.urlencoded({extended: true}));
 
     app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+    app.use("/api/admin/queues", createBullBoardRouter());
 
     app.use("/api/v1", routes);
 
     app.use(notFoundMiddleware);
     app.use(errorMiddleware);
+    
 
     return app;
 }
