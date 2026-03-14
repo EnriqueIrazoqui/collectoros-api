@@ -14,5 +14,12 @@ services:
     volumes:
       - collectoros_postgres_data:/var/lib/postgresql/data
 
+  redis:
+    image: redis:7
+    container_name: collectoros-redis
+    restart: always
+    ports:
+      - "6379:6379"
+
 volumes:
   collectoros_postgres_data:
