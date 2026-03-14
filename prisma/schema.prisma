@@ -38,7 +38,20 @@ model InventoryItem {
   createdAt             DateTime  @default(now()) @map("created_at")
   updatedAt             DateTime  @updatedAt @map("updated_at")
 
-  user User @relation(fields: [userId], references: [id])
+  user         User           @relation(fields: [userId], references: [id])
+  priceHistory PriceHistory[]
 
   @@map("inventory_items")
+}
+
+model PriceHistory {
+  id        Int      @id @default(autoincrement())
+  itemId    Int      @map("item_id")
+  price     Float
+  source    String?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  item InventoryItem @relation(fields: [itemId], references: [id])
+
+  @@map("price_history")
 }
