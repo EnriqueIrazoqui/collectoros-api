@@ -126,6 +126,7 @@ const swaggerDefinition = {
     { name: "Wishlist", description: "Wishlist management endpoints" },
     { name: "Analytics", description: "Analytics summary endpoints" },
     { name: "Alerts", description: "Alerts and opportunities endpoints" },
+    { name: "Forecast", description: "Forecast and price projection endpoints" },
   ],
 };
 
