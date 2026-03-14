@@ -49,24 +49,24 @@ src/
 └── routes/
     └── index.js
 
-Workflow
+## Workflow
 develop → feature/* → develop → main
 
-Requirements
+## Requirements
 Before running the project, make sure you have installed:
 Node.js (LTS recommended)
 Docker Desktop
 Git
 DBeaver or another PostgreSQL client
 
-Environment Variables
+## Environment Variables
 Create a .env file in the root of the project with the following values:
 PORT=3001
 DATABASE_URL="postgresql://postgres:postgres@localhost:5432/collectoros_db?schema=public"
 JWT_SECRET="super_secret_jwt_key"
 JWT_REFRESH_SECRET="super_secret_refresh_key"
 
-Run PostgreSQL with Docker
+## Run PostgreSQL with Docker
 This project uses PostgreSQL through Docker.
 
 Start the database
@@ -78,20 +78,20 @@ docker compose down
 Check running containers
 docker ps
 
-Install Dependencies
+## Install Dependencies
 npm install
 
-Prisma Commands
+## Prisma Commands
 Generate Prisma Client
 npx prisma generate
 
-Run migrations
+## Run migrations
 npx prisma migrate dev --name init
 
-Open Prisma Studio
+## Open Prisma Studio
 npx prisma studio
 
-Run the API
+## Run the API
 Development mode
 npm run dev
 
@@ -110,16 +110,16 @@ Available Scripts
   "prisma:studio": "prisma studio"
 }
 
-API Base URL
+## API Base URL
 /api/v1
 
-Available Endpoints
+## Available Endpoints
 Health
 GET /api/v1/health
 
 Checks whether the API and database are running correctly.
 
-Auth
+## Auth
 POST /api/v1/auth/register
 
 Create a new user.
@@ -146,7 +146,7 @@ Return the authenticated user.
 Required header:
 Authorization: Bearer <access_token>
 
-API Response Standard
+## API Response Standard
 
 Success response
 {
@@ -173,7 +173,7 @@ Validation error response
   ]
 }
 
-Coding Standards
+## Coding Standards
 
 All code is written in English
 
