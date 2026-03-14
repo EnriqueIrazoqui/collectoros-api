@@ -1,25 +1,42 @@
 const analyticsQueue = require("../queues/analytics.queue");
 
 async function scheduleAnalyticsJobs() {
-  await analyticsQueue.add(
-    "recalculateAnalytics",
-    {},
-    {
-      repeat: {
-        pattern: "0 */12 * * *",
-      },
-    }
+
+  const repeatableJobs = await analyticsQueue.getRepeatableJobs();
+
+  const hasAnalyticsJob = repeatableJobs.find(
+    job => job.name === "recalculateAnalytics"
   );
 
-  await analyticsQueue.add(
-    "refreshForecasts",
-    {},
-    {
-      repeat: {
-        pattern: "0 */24 * * *",
-      },
-    }
+  const hasForecastJob = repeatableJobs.find(
+    job => job.name === "refreshForecasts"
   );
+
+  if (!hasAnalyticsJob) {
+    await analyticsQueue.add(
+      "recalculateAnalytics",
+      {},
+      {
+        jobId: "recalculate-analytics",
+        repeat: {
+          pattern: "0 */12 * * *",
+        },
+      }
+    );
+  }
+
+  if (!hasForecastJob) {
+    await analyticsQueue.add(
+      "refreshForecasts",
+      {},
+      {
+        jobId: "refresh-forecasts",
+        repeat: {
+          pattern: "0 */24 * * *",
+        },
+      }
+    );
+  }
 
   console.log("Analytics jobs scheduled");
 }
