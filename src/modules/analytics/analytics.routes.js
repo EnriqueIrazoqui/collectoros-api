@@ -18,10 +18,59 @@ const router = express.Router();
  *       200:
  *         description: Analytics summary retrieved successfully
  */
-router.get(
-  "/summary",
-  authMiddleware,
-  analyticsController.getAnalyticsSummary,
-);
+router.get("/summary", authMiddleware, analyticsController.getAnalyticsSummary);
+
+/**
+ * @openapi
+ * /analytics/portfolio:
+ *   get:
+ *     summary: Get portfolio analytics for the authenticated user
+ *     tags:
+ *       - Analytics
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Portfolio analytics retrieved successfully
+ */
+router.get("/portfolio", authMiddleware, analyticsController.getPortfolioAnalytics);
+
+/**
+ * @openapi
+ * /analytics/top-items:
+ *   get:
+ *     summary: Get top inventory items for the authenticated user
+ *     tags:
+ *       - Analytics
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Top items retrieved successfully
+ */
+router.get("/top-items", authMiddleware, analyticsController.getTopItems);
+
+/**
+ * @openapi
+ * /analytics/item-trend/{itemId}:
+ *   get:
+ *     summary: Get price trend for an inventory item
+ *     tags:
+ *       - Analytics
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: itemId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Item trend retrieved successfully
+ *       404:
+ *         description: Inventory item not found
+ */
+router.get("/item-trend/:itemId", authMiddleware, analyticsController.getItemTrend);
 
 module.exports = router;
