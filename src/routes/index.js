@@ -5,6 +5,7 @@ const inventoryRoutes = require("../modules/inventory/inventory.routes");
 const priceHistoryRoutes = require("../modules/price-history/price-history.routes");
 const wishlistRoutes = require("../modules/wishlist/wishlist.routes");
 const analyticsRoutes = require("../modules/analytics/analytics.routes");
+const alertsRoutes = require("../modules/alerts/alerts.routes");
 
 const router = express.Router();
 
@@ -14,6 +15,7 @@ router.use("/inventory", inventoryRoutes);
 router.use("/price-history", priceHistoryRoutes);
 router.use("/wishlist", wishlistRoutes);
 router.use("/analytics", analyticsRoutes);
+router.use("/alerts", alertsRoutes);
 
 
 module.exports = router;
