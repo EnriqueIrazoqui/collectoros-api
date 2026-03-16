@@ -17,6 +17,17 @@ async function findPriceHistoryByItemId(itemId) {
   });
 }
 
+async function findLatestPriceHistoryByItemId(itemId) {
+  return prisma.priceHistory.findFirst({
+    where: {
+      itemId,
+    },
+    orderBy: {
+      createdAt: "desc",
+    },
+  });
+}
+
 async function findPriceHistoryById(priceHistoryId) {
   return prisma.priceHistory.findUnique({
     where: {
@@ -35,6 +46,7 @@ async function deletePriceHistory(priceHistoryId) {
 
 module.exports = {
   createPriceHistory,
+  findLatestPriceHistoryByItemId,
   findPriceHistoryByItemId,
   findPriceHistoryById,
   deletePriceHistory,
