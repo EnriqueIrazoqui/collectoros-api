@@ -1,5 +1,70 @@
 const { z } = require("zod");
 
+const emptyStringToNull = (value) => {
+  if (value === "" || value === undefined) {
+    return null;
+  }
+
+  return value;
+};
+
+const optionalTrimmedString = (fieldName, maxLength) =>
+  z.preprocess(
+    emptyStringToNull,
+    z
+      .string()
+      .trim()
+      .max(
+        maxLength,
+        `${fieldName} must be at most ${maxLength} characters long`,
+      )
+      .nullable()
+      .optional(),
+  );
+
+const optionalNonNegativeNumber = (fieldLabel) =>
+  z.preprocess(
+    (value) => {
+      if (value === "" || value === undefined || value === null) {
+        return null;
+      }
+
+      const parsedValue = Number(value);
+      return Number.isNaN(parsedValue) ? value : parsedValue;
+    },
+    z
+      .number({
+        invalid_type_error: `${fieldLabel} must be a number`,
+      })
+      .nonnegative(`${fieldLabel} must be greater than or equal to 0`)
+      .nullable()
+      .optional(),
+  );
+
+const optionalPositiveInt = (fieldLabel) =>
+  z.preprocess(
+    (value) => {
+      if (value === "" || value === undefined || value === null) {
+        return undefined;
+      }
+
+      const parsedValue = Number(value);
+      return Number.isNaN(parsedValue) ? value : parsedValue;
+    },
+    z
+      .number({
+        invalid_type_error: `${fieldLabel} must be a number`,
+      })
+      .int(`${fieldLabel} must be an integer`)
+      .min(1, `${fieldLabel} must be at least 1`)
+      .optional(),
+  );
+
+const optionalDateString = z.preprocess(
+  emptyStringToNull,
+  z.string().trim().nullable().optional(),
+);
+
 const createInventoryItemSchema = z.object({
   name: z
     .string()
@@ -13,45 +78,26 @@ const createInventoryItemSchema = z.object({
     .min(1, "Category is required")
     .max(100, "Category must be at most 100 characters long"),
 
-  description: z
-    .string()
-    .trim()
-    .max(1000, "Description must be at most 1000 characters long")
-    .optional()
-    .nullable(),
+  description: optionalTrimmedString("Description", 1000),
 
-  purchasePrice: z
-    .number({ error: "Purchase price must be a number" })
-    .nonnegative("Purchase price must be greater than or equal to 0")
-    .optional()
-    .nullable(),
+  purchasePrice: optionalNonNegativeNumber("Purchase price"),
 
-  purchaseDate: z
-    .string()
-    .datetime("Purchase date must be a valid ISO datetime")
-    .optional()
-    .nullable(),
+  purchaseDate: optionalDateString,
 
-  currentEstimatedValue: z
-    .number({ error: "Current estimated value must be a number" })
-    .nonnegative("Current estimated value must be greater than or equal to 0")
-    .optional()
-    .nullable(),
+  currentEstimatedValue: optionalNonNegativeNumber("Current estimated value"),
 
-  quantity: z
-    .int("Quantity must be an integer")
-    .min(1, "Quantity must be at least 1")
-    .optional(),
+  quantity: optionalPositiveInt("Quantity"),
 
-  condition: z
-    .string()
-    .trim()
-    .max(100, "Condition must be at most 100 characters long")
-    .optional()
-    .nullable(),
+  condition: optionalTrimmedString("Condition", 100),
 });
 
-const updateInventoryItemSchema = createInventoryItemSchema.partial();
+const updateInventoryItemSchema = z.object({
+  description: z.string().optional(),
+  currentEstimatedValue: z.string().optional(),
+  condition: z.string().optional(),
+  purchaseDate: z.string().optional(),
+  hasChanges: z.string().optional(),
+});
 
 module.exports = {
   createInventoryItemSchema,

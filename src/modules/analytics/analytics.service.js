@@ -9,6 +9,10 @@ function roundNumber(value) {
   return Number(value.toFixed(2));
 }
 
+function formatGrowthDate(date) {
+  return new Date(date).toISOString();
+}
+
 async function getAnalyticsSummary(userId) {
   const inventoryItems = await analyticsRepository.getInventorySummary(userId);
   const wishlistItems = await analyticsRepository.getWishlistSummary(userId);
@@ -174,9 +178,195 @@ async function getItemTrend(userId, itemId) {
   };
 }
 
+async function getPortfolioAllocation(userId) {
+  const groupedItems =
+    await analyticsRepository.getPortfolioAllocationByCategory(userId);
+
+  const normalized = groupedItems
+    .map((item) => {
+      const category = item.category || "Uncategorized";
+      const totalValue = Number(item._sum.currentEstimatedValue || 0);
+      const itemsCount = Number(item._count.id || 0);
+
+      return {
+        category,
+        totalValue,
+        itemsCount,
+      };
+    })
+    .filter((item) => item.totalValue > 0);
+
+  const totalPortfolioValue = normalized.reduce(
+    (acc, item) => acc + item.totalValue,
+    0,
+  );
+
+  const data = normalized
+    .map((item) => ({
+      ...item,
+      percentage:
+        totalPortfolioValue > 0
+          ? Number(((item.totalValue / totalPortfolioValue) * 100).toFixed(2))
+          : 0,
+    }))
+    .sort((a, b) => b.totalValue - a.totalValue);
+
+  return {
+    totalPortfolioValue,
+    categoriesCount: data.length,
+    allocation: data,
+  };
+}
+
+async function getCollectionGrowth(userId) {
+  const inventoryItems =
+    await analyticsRepository.getInventoryItemsWithPriceHistoryByUserId(userId);
+
+  const events = [];
+
+  inventoryItems.forEach((item) => {
+    const quantity = Number(item.quantity || 0);
+
+    item.priceHistory.forEach((entry) => {
+      events.push({
+        itemId: item.id,
+        itemName: item.name,
+        quantity,
+        price: Number(entry.price || 0),
+        createdAt: entry.createdAt,
+      });
+    });
+  });
+
+  if (events.length === 0) {
+    return {
+      startValue: 0,
+      currentValue: 0,
+      growthAmount: 0,
+      growthPercent: 0,
+      pointsCount: 0,
+      history: [],
+    };
+  }
+
+  events.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+
+  const latestPriceByItemId = new Map();
+  const history = [];
+
+  events.forEach((event) => {
+    latestPriceByItemId.set(event.itemId, {
+      itemId: event.itemId,
+      itemName: event.itemName,
+      quantity: event.quantity,
+      price: event.price,
+    });
+
+    let totalValue = 0;
+
+    latestPriceByItemId.forEach((entry) => {
+      totalValue += Number(entry.quantity || 0) * Number(entry.price || 0);
+    });
+
+    history.push({
+      date: formatGrowthDate(event.createdAt),
+      totalValue: roundNumber(totalValue),
+    });
+  });
+
+  const consolidatedHistory = history.reduce((accumulator, currentPoint) => {
+    const lastPoint = accumulator[accumulator.length - 1];
+
+    if (lastPoint && lastPoint.date === currentPoint.date) {
+      lastPoint.totalValue = currentPoint.totalValue;
+      return accumulator;
+    }
+
+    accumulator.push(currentPoint);
+    return accumulator;
+  }, []);
+
+  const startValue = Number(consolidatedHistory[0]?.totalValue || 0);
+  const currentValue = Number(
+    consolidatedHistory[consolidatedHistory.length - 1]?.totalValue || 0,
+  );
+  const growthAmount = currentValue - startValue;
+  const growthPercent =
+    startValue > 0 ? (growthAmount / startValue) * 100 : 0;
+
+  return {
+    startValue: roundNumber(startValue),
+    currentValue: roundNumber(currentValue),
+    growthAmount: roundNumber(growthAmount),
+    growthPercent: roundNumber(growthPercent),
+    pointsCount: consolidatedHistory.length,
+    history: consolidatedHistory,
+  };
+}
+
+async function getTradePerformance(userId) {
+  const inventoryItems =
+    await analyticsRepository.getInventoryItemsForTradePerformance(userId);
+
+  const normalizedItems = inventoryItems
+    .map((item) => {
+      const quantity = Number(item.quantity || 0);
+      const purchasePrice = Number(item.purchasePrice || 0);
+      const currentEstimatedValue = Number(item.currentEstimatedValue || 0);
+
+      const totalPurchaseValue = purchasePrice * quantity;
+      const totalCurrentValue = currentEstimatedValue * quantity;
+      const profitAmount = totalCurrentValue - totalPurchaseValue;
+      const profitPercent =
+        totalPurchaseValue > 0
+          ? (profitAmount / totalPurchaseValue) * 100
+          : 0;
+
+      return {
+        id: item.id,
+        name: item.name,
+        category: item.category || "Uncategorized",
+        condition: item.condition || "-",
+        quantity,
+        purchasePrice: roundNumber(purchasePrice),
+        currentEstimatedValue: roundNumber(currentEstimatedValue),
+        totalPurchaseValue: roundNumber(totalPurchaseValue),
+        totalCurrentValue: roundNumber(totalCurrentValue),
+        profitAmount: roundNumber(profitAmount),
+        profitPercent: roundNumber(profitPercent),
+        purchaseDate: item.purchaseDate,
+      };
+    })
+    .filter((item) => item.totalPurchaseValue > 0);
+
+  if (!normalizedItems.length) {
+    return {
+      bestTrade: null,
+      worstTrade: null,
+    };
+  }
+
+  const bestTrade = [...normalizedItems].sort(
+    (a, b) => b.profitAmount - a.profitAmount,
+  )[0];
+
+  const worstTrade = [...normalizedItems].sort(
+    (a, b) => a.profitAmount - b.profitAmount,
+  )[0];
+
+  return {
+    bestTrade,
+    worstTrade,
+  };
+}
+
+
 module.exports = {
   getAnalyticsSummary,
   getPortfolioAnalytics,
   getTopItems,
   getItemTrend,
+  getPortfolioAllocation,
+  getCollectionGrowth,
+  getTradePerformance,
 };

@@ -7,11 +7,15 @@ const {
 
 async function createInventoryItem(request, response, next) {
   try {
+    console.log("BODY:", request.body);
+    console.log("FILES:", request.files);
+
     const payload = createInventoryItemSchema.parse(request.body);
 
     const inventoryItem = await inventoryService.createInventoryItem(
       request.user.id,
       payload,
+      request.files || [],
     );
 
     return sendSuccessResponse(response, {
@@ -26,7 +30,9 @@ async function createInventoryItem(request, response, next) {
 
 async function getInventoryItems(request, response, next) {
   try {
-    const inventoryItems = await inventoryService.getInventoryItems(request.user.id);
+    const inventoryItems = await inventoryService.getInventoryItems(
+      request.user.id,
+    );
 
     return sendSuccessResponse(response, {
       message: "Inventory items retrieved successfully",
@@ -55,15 +61,61 @@ async function getInventoryItemById(request, response, next) {
   }
 }
 
-async function updateInventoryItem(request, response, next) {
+const getInventoryImageContent = async (request, response, next) => {
+  try {
+    const userId = request.user.id;
+    const imageId = Number(request.params.imageId);
+
+    const result = await inventoryService.getInventoryImageContent({
+      userId,
+      imageId,
+    });
+
+    response.setHeader("Content-Type", result.contentType || "application/octet-stream");
+    response.setHeader(
+      "Content-Disposition",
+      `inline; filename="${result.fileName || "image"}"`
+    );
+
+    if (result.contentLength) {
+      response.setHeader("Content-Length", String(result.contentLength));
+    }
+
+    result.stream.pipe(response);
+  } catch (error) {
+    next(error);
+  }
+};
+
+async function getInventoryItemImages(request, response, next) {
   try {
     const inventoryItemId = Number(request.params.inventoryItemId);
+
+    const images = await inventoryService.getInventoryItemImages(
+      request.user.id,
+      inventoryItemId,
+    );
+
+    return sendSuccessResponse(response, {
+      message: "Inventory item images retrieved successfully",
+      data: images,
+    });
+  } catch (error) {
+    return next(error);
+  }
+}
+
+async function updateInventoryItem(request, response, next) {
+  try {
+    const inventoryItemId = Number(request.params.id);
     const payload = updateInventoryItemSchema.parse(request.body);
+    const files = request.files || [];
 
     const inventoryItem = await inventoryService.updateInventoryItem(
       request.user.id,
       inventoryItemId,
       payload,
+      files,
     );
 
     return sendSuccessResponse(response, {
@@ -94,6 +146,8 @@ module.exports = {
   createInventoryItem,
   getInventoryItems,
   getInventoryItemById,
+  getInventoryImageContent,
+  getInventoryItemImages,
   updateInventoryItem,
   deleteInventoryItem,
 };
