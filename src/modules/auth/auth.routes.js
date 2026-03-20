@@ -2,9 +2,9 @@ const express = require("express");
 
 const authController = require("./auth.controller");
 const authMiddleware = require("../../middlewares/auth.middleware");
+const microsoftController = require("./microsoft.controller");
 
 const router = express.Router();
-
 
 /**
  * @openapi
@@ -76,6 +76,9 @@ router.post("/register", authController.register);
  */
 router.post("/login", authController.login);
 
+router.post("/refresh", authController.refresh);
+router.post("/logout", authMiddleware, authController.logout);
+
 /**
  * @openapi
  * /auth/me:
@@ -100,5 +103,49 @@ router.post("/login", authController.login);
  *               $ref: '#/components/schemas/ErrorResponse'
  */
 router.get("/me", authMiddleware, authController.me);
+
+/**
+ * @openapi
+ * /auth/microsoft/login:
+ *   get:
+ *     summary: Generate Microsoft authorization URL
+ *     tags:
+ *       - Microsoft Auth
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Microsoft authorization URL generated successfully
+ *       401:
+ *         description: Unauthorized
+ */
+router.get("/microsoft/login", authMiddleware, microsoftController.microsoftLogin);
+
+/**
+ * @openapi
+ * /auth/microsoft/callback:
+ *   get:
+ *     summary: Handle Microsoft OAuth callback
+ *     tags:
+ *       - Microsoft Auth
+ *     parameters:
+ *       - in: query
+ *         name: code
+ *         required: true
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: state
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       302:
+ *         description: Redirects user back to the application after successful Microsoft connection
+ *       400:
+ *         description: Invalid Microsoft callback request
+ */
+router.get("/microsoft/callback", microsoftController.microsoftCallback);
+
 
 module.exports = router;

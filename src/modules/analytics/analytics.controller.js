@@ -58,9 +58,52 @@ async function getItemTrend(request, response, next) {
   }
 }
 
+async function getPortfolioAllocation(req, res, next) {
+  try {
+    const data = await analyticsService.getPortfolioAllocation(req.user.id);
+
+    return res.status(200).json({
+      ok: true,
+      message: "Portfolio allocation retrieved successfully",
+      data,
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+async function getCollectionGrowth(request, response, next) {
+  try {
+    const data = await analyticsService.getCollectionGrowth(request.user.id);
+
+    return sendSuccessResponse(response, {
+      message: "Collection growth retrieved successfully",
+      data,
+    });
+  } catch (error) {
+    return next(error);
+  }
+}
+
+async function getTradePerformance(request, response, next) {
+  try {
+    const data = await analyticsService.getTradePerformance(request.user.id);
+
+    return sendSuccessResponse(response, {
+      message: "Trade performance retrieved successfully",
+      data,
+    });
+  } catch (error) {
+    return next(error);
+  }
+}
+
 module.exports = {
   getAnalyticsSummary,
   getPortfolioAnalytics,
   getTopItems,
   getItemTrend,
+  getPortfolioAllocation,
+  getCollectionGrowth,
+  getTradePerformance,
 };

@@ -1,9 +1,9 @@
 const {z} = require("zod");
 
 const registerSchema = z.object({
-    email: z.email("Email is invalid").trim().toLowerCase(),
-    password: z.string().min(8, "Password must be at least 8 characters long"),
-    displayName: z
+  email: z.email("Email is invalid").trim().toLowerCase(),
+  password: z.string().min(8, "Password must be at least 8 characters long"),
+  displayName: z
     .string()
     .trim()
     .min(2, "Display name must be at least 2 characters long")
@@ -11,11 +11,17 @@ const registerSchema = z.object({
 });
 
 const loginSchema = z.object({
-    email: z.email("Email is invalid").trim().toLowerCase(),
-    password: z.string().min(1, "Password is required"),
+  email: z.email("Email is invalid").trim().toLowerCase(),
+  password: z.string().min(1, "Password is required"),
 });
+
+const refreshSchema = z.object({
+  refreshToken: z.string().min(1, "Refresh token is required"),
+});
+
 
 module.exports = {
     registerSchema,
     loginSchema,
+    refreshSchema,
 };

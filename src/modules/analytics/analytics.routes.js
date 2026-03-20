@@ -33,7 +33,11 @@ router.get("/summary", authMiddleware, analyticsController.getAnalyticsSummary);
  *       200:
  *         description: Portfolio analytics retrieved successfully
  */
-router.get("/portfolio", authMiddleware, analyticsController.getPortfolioAnalytics);
+router.get(
+  "/portfolio",
+  authMiddleware,
+  analyticsController.getPortfolioAnalytics,
+);
 
 /**
  * @openapi
@@ -71,6 +75,73 @@ router.get("/top-items", authMiddleware, analyticsController.getTopItems);
  *       404:
  *         description: Inventory item not found
  */
-router.get("/item-trend/:itemId", authMiddleware, analyticsController.getItemTrend);
+router.get(
+  "/item-trend/:itemId",
+  authMiddleware,
+  analyticsController.getItemTrend,
+);
+
+/**
+ * @openapi
+ * /analytics/allocation:
+ *   get:
+ *     summary: Get portfolio allocation by category
+ *     tags:
+ *       - Analytics
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Portfolio allocation retrieved successfully
+ *       401:
+ *         description: Unauthorized
+ */
+router.get(
+  "/allocation",
+  authMiddleware,
+  analyticsController.getPortfolioAllocation,
+);
+
+/**
+ * @openapi
+ * /analytics/collection-growth:
+ *   get:
+ *     summary: Get collection growth over time
+ *     tags:
+ *       - Analytics
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Collection growth data retrieved successfully
+ *       401:
+ *         description: Unauthorized
+ */
+router.get(
+  "/collection-growth",
+  authMiddleware,
+  analyticsController.getCollectionGrowth,
+);
+
+/**
+ * @openapi
+ * /analytics/trade-performance:
+ *   get:
+ *     summary: Get trade performance metrics (profit/loss)
+ *     tags:
+ *       - Analytics
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Trade performance retrieved successfully
+ *       401:
+ *         description: Unauthorized
+ */
+router.get(
+  "/trade-performance",
+  authMiddleware,
+  analyticsController.getTradePerformance,
+);
 
 module.exports = router;

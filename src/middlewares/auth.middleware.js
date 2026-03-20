@@ -3,6 +3,7 @@ const env = require("../config/env");
 
 async function authMiddleware(request, response, next) {
     try {
+        console.log("AUTH HEADER:", request.headers.authorization);
         const authorizationHeader = request.headers.authorization;
 
         if (!authorizationHeader) {

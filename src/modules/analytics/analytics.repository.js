@@ -81,10 +81,69 @@ async function getPriceHistoryByItemId(itemId) {
   });
 }
 
+async function getPortfolioAllocationByCategory(userId) {
+  return prisma.inventoryItem.groupBy({
+    by: ["category"],
+    where: {
+      userId,
+    },
+    _sum: {
+      currentEstimatedValue: true,
+    },
+    _count: {
+      id: true,
+    },
+  });
+}
+
+async function getInventoryItemsWithPriceHistoryByUserId(userId) {
+  return prisma.inventoryItem.findMany({
+    where: {
+      userId,
+    },
+    select: {
+      id: true,
+      name: true,
+      quantity: true,
+      priceHistory: {
+        select: {
+          id: true,
+          price: true,
+          createdAt: true,
+        },
+        orderBy: {
+          createdAt: "asc",
+        },
+      },
+    },
+  });
+}
+
+async function getInventoryItemsForTradePerformance(userId) {
+  return prisma.inventoryItem.findMany({
+    where: {
+      userId,
+    },
+    select: {
+      id: true,
+      name: true,
+      category: true,
+      quantity: true,
+      purchasePrice: true,
+      currentEstimatedValue: true,
+      purchaseDate: true,
+      condition: true,
+    },
+  });
+}
+
 module.exports = {
   getInventorySummary,
   getWishlistSummary,
   getInventoryItemsByUserId,
   findInventoryItemById,
   getPriceHistoryByItemId,
+  getPortfolioAllocationByCategory,
+  getInventoryItemsWithPriceHistoryByUserId,
+  getInventoryItemsForTradePerformance,
 };

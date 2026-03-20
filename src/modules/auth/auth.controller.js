@@ -1,6 +1,7 @@
 const authService = require("./auth.service");
 const { registerSchema, loginSchema } = require("./auth.schema");
 const { sendSuccessResponse } = require("../../common/utils/response");
+const { refreshSchema } = require("./auth.schema");
 
 async function register(request, response, next) {
   try {
@@ -32,11 +33,40 @@ async function login(request, response, next) {
   }
 }
 
+async function refresh(request, response, next) {
+  try {
+    const payload = refreshSchema.parse(request.body);
+    const result = await authService.refreshUserSession(payload.refreshToken);
+
+    return sendSuccessResponse(response, {
+      statusCode: 200,
+      message: "Session refreshed successfully",
+      data: result,
+    });
+  } catch (error) {
+    return next(error);
+  }
+}
+
+async function logout(request, response, next) {
+  try {
+    await authService.logoutUser(request.user.id);
+
+    return sendSuccessResponse(response, {
+      statusCode: 200,
+      message: "Logout successful",
+      data: null,
+    });
+  } catch (error) {
+    return next(error);
+  }
+}
+
 async function me(request, response, next) {
   try {
     const user = await authService.getCurrentUser(request.user.id);
 
-     return sendSuccessResponse(response, {
+    return sendSuccessResponse(response, {
       statusCode: 200,
       data: user,
     });
@@ -48,5 +78,7 @@ async function me(request, response, next) {
 module.exports = {
   register,
   login,
+  refresh,
+  logout,
   me,
 };
