@@ -179,8 +179,9 @@ async function getCurrentUser(userId) {
     email: user.email,
     displayName: user.displayName,
 
-    microsoftAccountId: user.microsoftAccountId,
-    microsoftConnected: !!user.microsoftAccountId,
+    microsoftAccountId: user.microsoftAccessToken,
+    microsoftConnected:
+      !!user.microsoftAccessToken && !!user.microsoftRefreshToken,
 
     createdAt: user.createdAt,
     updatedAt: user.updatedAt,
