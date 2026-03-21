@@ -84,7 +84,7 @@ model PriceHistory {
   source    String?
   createdAt DateTime @default(now()) @map("created_at")
 
-  item InventoryItem @relation(fields: [itemId], references: [id])
+  item InventoryItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
 
   @@map("price_history")
 }
