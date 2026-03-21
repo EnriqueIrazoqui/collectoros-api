@@ -110,19 +110,8 @@ async function getInventoryImageContent({ userId, imageId }) {
     throw new AppError("La imagen no tiene driveItemId", 400);
   }
 
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    select: {
-      microsoftAccessToken: true,
-    },
-  });
-
-  if (!user?.microsoftAccessToken) {
-    throw new AppError("El usuario no tiene Microsoft conectado", 400);
-  }
-
   return oneDriveService.downloadFileByDriveItemId({
-    accessToken: user.microsoftAccessToken,
+    userId,
     driveItemId: image.driveItemId,
     fileName: image.fileName,
   });
@@ -161,6 +150,22 @@ async function updateInventoryItem(
 
   if (inventoryItem.userId !== userId) {
     throw new AppError("Inventory item not found", 404);
+  }
+
+  if (files.length > 0) {
+    const existingImages =
+      await inventoryRepository.findInventoryImagesByItemIdAndUserId(
+        inventoryItemId,
+        userId,
+      );
+
+    const totalImages = existingImages.length + files.length;
+
+    if (totalImages > MAX_IMAGES) {
+      throw new AppError("Solo se permiten hasta 5 imágenes por item", 400);
+    }
+
+    validateInventoryImages(files);
   }
 
   const normalizedPayload = {

@@ -1,6 +1,7 @@
 const axios = require("axios");
 const AppError = require("../common/errors/app-error");
 const userRepository = require("../modules/users/user.repository");
+const { getValidMicrosoftAccessToken } = require("./microsoftToken.service");
 
 function getFileExtension(fileName = "") {
   if (!fileName.includes(".")) {
@@ -60,11 +61,7 @@ async function uploadInventoryImage({ userId, itemId, file, position }) {
     throw new AppError("Usuario no encontrado", 404);
   }
 
-  if (!user.microsoftAccessToken) {
-    throw new AppError("Tu cuenta de Microsoft no está conectada", 400);
-  }
-
-  const accessToken = (user.microsoftAccessToken || "").trim();
+  const accessToken = await getValidMicrosoftAccessToken(userId);
   const extension = getFileExtension(file.originalname);
   const fileName = `img_${position}_${Date.now()}.${extension}`;
 
@@ -103,11 +100,13 @@ async function uploadInventoryImage({ userId, itemId, file, position }) {
 }
 
 async function downloadFileByDriveItemId({
-  accessToken,
+  userId,
   driveItemId,
   fileName,
 }) {
   try {
+    const accessToken = await getValidMicrosoftAccessToken(userId);
+
     const response = await axios.get(
       `https://graph.microsoft.com/v1.0/me/drive/items/${driveItemId}/content`,
       {
