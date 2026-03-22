@@ -14,6 +14,7 @@ function generateAccessToken(user) {
     {
       sub: user.id,
       email: user.email,
+      role: user.role,
     },
     env.jwtSecret,
     {
@@ -74,6 +75,10 @@ async function loginUser(payload) {
     throw new AppError("Invalid credentials", 401);
   }
 
+  if (!user.isActive) {
+    throw new AppError("This account is inactive", 403);
+  }
+
   const accessToken = generateAccessToken(user);
   const refreshToken = generateRefreshToken(user);
   const refreshTokenHash = await bcrypt.hash(refreshToken, 10);
@@ -93,6 +98,8 @@ async function loginUser(payload) {
       id: user.id,
       email: user.email,
       displayName: user.displayName,
+      role: user.role,
+      isActive: user.isActive,
     },
   };
 }
@@ -178,8 +185,10 @@ async function getCurrentUser(userId) {
     id: user.id,
     email: user.email,
     displayName: user.displayName,
+    role: user.role,
+    isActive: user.isActive,
 
-    microsoftAccountId: user.microsoftAccessToken,
+    microsoftAccountId: user.microsoftAccountId,
     microsoftConnected:
       !!user.microsoftAccessToken && !!user.microsoftRefreshToken,
 
