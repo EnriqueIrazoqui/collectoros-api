@@ -188,6 +188,9 @@ async function getCurrentUser(userId) {
     role: user.role,
     isActive: user.isActive,
 
+    hasSeenWelcome: user.hasSeenWelcome,
+    welcomeSeenAt: user.welcomeSeenAt,
+
     microsoftAccountId: user.microsoftAccountId,
     microsoftConnected:
       !!user.microsoftAccessToken && !!user.microsoftRefreshToken,
@@ -197,10 +200,33 @@ async function getCurrentUser(userId) {
   };
 }
 
+async function markWelcomeAsSeen(userId) {
+  const user = await authRepository.findUserById(userId);
+
+  if (!user) {
+    throw new AppError("User not found", 404);
+  }
+
+  if (user.hasSeenWelcome) {
+    return {
+      hasSeenWelcome: true,
+      welcomeSeenAt: user.welcomeSeenAt,
+    };
+  }
+
+  const updatedUser = await authRepository.markWelcomeAsSeen(userId);
+
+  return {
+    hasSeenWelcome: updatedUser.hasSeenWelcome,
+    welcomeSeenAt: updatedUser.welcomeSeenAt,
+  };
+}
+
 module.exports = {
   registerUser,
   loginUser,
   getCurrentUser,
   logoutUser,
   refreshUserSession,
+  markWelcomeAsSeen,
 };

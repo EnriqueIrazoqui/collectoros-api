@@ -29,6 +29,9 @@ model User {
   microsoftRefreshToken   String?   @map("microsoft_refresh_token")
   microsoftTokenExpiresAt DateTime? @map("microsoft_token_expires_at")
 
+  hasSeenWelcome           Boolean   @default(false) @map("has_seen_welcome")
+  welcomeSeenAt            DateTime? @map("welcome_seen_at")
+
   inventoryItems       InventoryItem[]
   wishlistItems        WishlistItem[]
   inventoryItemImages  InventoryItemImage[]
