@@ -75,10 +75,25 @@ async function me(request, response, next) {
   }
 }
 
+async function markWelcomeSeen(request, response, next) {
+  try {
+    const result = await authService.markWelcomeAsSeen(request.user.id);
+
+    return sendSuccessResponse(response, {
+      statusCode: 200,
+      message: "Welcome marked as seen successfully",
+      data: result,
+    });
+  } catch (error) {
+    return next(error);
+  }
+}
+
 module.exports = {
   register,
   login,
   refresh,
   logout,
   me,
+  markWelcomeSeen,
 };

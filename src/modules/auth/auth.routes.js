@@ -119,7 +119,11 @@ router.get("/me", authMiddleware, authController.me);
  *       401:
  *         description: Unauthorized
  */
-router.get("/microsoft/login", authMiddleware, microsoftController.microsoftLogin);
+router.get(
+  "/microsoft/login",
+  authMiddleware,
+  microsoftController.microsoftLogin,
+);
 
 /**
  * @openapi
@@ -147,5 +151,46 @@ router.get("/microsoft/login", authMiddleware, microsoftController.microsoftLogi
  */
 router.get("/microsoft/callback", microsoftController.microsoftCallback);
 
+/**
+ * @openapi
+ * /auth/me/welcome/seen:
+ *   patch:
+ *     summary: Mark welcome guide as seen for the current user
+ *     tags:
+ *       - Auth
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Welcome status updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/SuccessResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       type: object
+ *                       properties:
+ *                         hasSeenWelcome:
+ *                           type: boolean
+ *                           example: true
+ *                         welcomeSeenAt:
+ *                           type: string
+ *                           format: date-time
+ *                           example: "2026-03-29T18:00:00.000Z"
+ *       401:
+ *         description: Unauthorized
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
+router.patch(
+  "/me/welcome/seen",
+  authMiddleware,
+  authController.markWelcomeSeen,
+);
 
 module.exports = router;

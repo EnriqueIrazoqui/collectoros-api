@@ -46,10 +46,23 @@ async function clearUserRefreshToken(userId) {
   });
 }
 
+async function markWelcomeAsSeen(userId) {
+  return prisma.user.update({
+    where: {
+      id: userId,
+    },
+    data: {
+      hasSeenWelcome: true,
+      welcomeSeenAt: new Date(),
+    },
+  });
+}
+
 module.exports = {
   findUserByEmail,
   findUserById,
   createUser,
   updateUserRefreshToken,
   clearUserRefreshToken,
+  markWelcomeAsSeen,
 };
