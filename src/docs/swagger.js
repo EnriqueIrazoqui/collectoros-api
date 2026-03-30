@@ -10,6 +10,10 @@ const swaggerDefinition = {
   },
   servers: [
     {
+      url: "https://collectoros-api.onrender.com/api/v1",
+      description: "Production server",
+    },
+    {
       url: "http://localhost:3001/api/v1",
       description: "Local development server",
     },
@@ -126,16 +130,17 @@ const swaggerDefinition = {
     { name: "Wishlist", description: "Wishlist management endpoints" },
     { name: "Analytics", description: "Analytics summary endpoints" },
     { name: "Alerts", description: "Alerts and opportunities endpoints" },
-    { name: "Forecast", description: "Forecast and price projection endpoints" },
+    {
+      name: "Forecast",
+      description: "Forecast and price projection endpoints",
+    },
     { name: "Dashboard", description: "Dashboard aggregated endpoints" },
   ],
 };
 
 const options = {
   definition: swaggerDefinition,
-  apis: [
-    "./src/modules/**/*.js",
-  ],
+  apis: ["./src/modules/**/*.js"],
 };
 
 const swaggerSpec = swaggerJsdoc(options);
