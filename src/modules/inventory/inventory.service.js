@@ -5,6 +5,8 @@ const prisma = require("../../config/prisma");
 
 const MAX_IMAGES = 5;
 const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
+const MAX_FILE_SIZE_MB = 5;
+const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
 
 function toNumberOrNull(value) {
   if (value === undefined || value === null || value === "") {
@@ -14,7 +16,6 @@ function toNumberOrNull(value) {
   const parsed = Number(value);
   return Number.isNaN(parsed) ? null : parsed;
 }
-
 
 function normalizeInventoryPayload(payload) {
   return {
@@ -28,13 +29,20 @@ function normalizeInventoryPayload(payload) {
 
 function validateInventoryImages(files = []) {
   if (files.length > MAX_IMAGES) {
-    throw new AppError("Solo se permiten hasta 5 imágenes por item", 400);
+    throw new AppError("You can upload up to 5 images per item.", 400);
   }
 
   for (const file of files) {
     if (!ALLOWED_IMAGE_TYPES.includes(file.mimetype)) {
       throw new AppError(
-        `Formato no permitido para ${file.originalname}. Solo se aceptan JPG, PNG y WEBP`,
+        `Invalid file type for "${file.originalname}". Only JPG, PNG, and WEBP are allowed.`,
+        400,
+      );
+    }
+
+    if (file.size > MAX_FILE_SIZE_BYTES) {
+      throw new AppError(
+        `The image "${file.originalname}" exceeds the ${MAX_FILE_SIZE_MB}MB limit.`,
         400,
       );
     }
