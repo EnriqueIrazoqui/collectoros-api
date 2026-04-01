@@ -2,8 +2,7 @@ const axios = require("axios");
 const userRepository = require("../users/user.repository");
 
 function buildMicrosoftAuthUrl({ userId }) {
-  const tenant = process.env.MICROSOFT_TENANT_ID || "common";
-  const baseUrl = `https://login.microsoftonline.com/${tenant}/oauth2/v2.0/authorize`;
+  const baseUrl = "https://login.microsoftonline.com/common/oauth2/v2.0/authorize";
 
   const params = new URLSearchParams({
     client_id: process.env.MICROSOFT_CLIENT_ID,
@@ -55,8 +54,6 @@ async function microsoftCallback(request, response, next) {
       });
     }
 
-    const tenant = process.env.MICROSOFT_TENANT_ID || "common";
-
     const params = new URLSearchParams();
     params.append("client_id", process.env.MICROSOFT_CLIENT_ID);
     params.append("client_secret", process.env.MICROSOFT_CLIENT_SECRET);
@@ -66,7 +63,7 @@ async function microsoftCallback(request, response, next) {
     params.append("scope", process.env.MICROSOFT_APP_SCOPES);
 
     const { data } = await axios.post(
-      `https://login.microsoftonline.com/${tenant}/oauth2/v2.0/token`,
+      "https://login.microsoftonline.com/common/oauth2/v2.0/token",
       params,
       {
         headers: {

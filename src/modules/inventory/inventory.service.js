@@ -6,11 +6,23 @@ const prisma = require("../../config/prisma");
 const MAX_IMAGES = 5;
 const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
 
+function toNumberOrNull(value) {
+  if (value === undefined || value === null || value === "") {
+    return null;
+  }
+
+  const parsed = Number(value);
+  return Number.isNaN(parsed) ? null : parsed;
+}
+
+
 function normalizeInventoryPayload(payload) {
   return {
     ...payload,
     purchaseDate: payload.purchaseDate ? new Date(payload.purchaseDate) : null,
-    quantity: payload.quantity ?? 1,
+    purchasePrice: toNumberOrNull(payload.purchasePrice),
+    currentEstimatedValue: toNumberOrNull(payload.currentEstimatedValue),
+    quantity: toNumberOrNull(payload.quantity) ?? 1,
   };
 }
 
@@ -39,6 +51,8 @@ async function createInventoryItem(userId, payload, files = []) {
     ...normalizedPayload,
   });
 
+  const warnings = [];
+
   if (files.length > 0) {
     const imagesToCreate = [];
 
@@ -46,37 +60,53 @@ async function createInventoryItem(userId, payload, files = []) {
       const file = files[index];
       const position = index + 1;
 
-      const uploadResult = await oneDriveService.uploadInventoryImage({
-        userId,
-        itemId: inventoryItem.id,
-        file,
-        position,
-      });
+      try {
+        const uploadResult = await oneDriveService.uploadInventoryImage({
+          userId,
+          itemId: inventoryItem.id,
+          file,
+          position,
+        });
 
-      imagesToCreate.push({
-        inventoryItemId: inventoryItem.id,
-        userId,
-        imageUrl: uploadResult.imageUrl,
-        driveItemId: uploadResult.driveItemId,
-        fileName: uploadResult.fileName,
-        originalName: file.originalname,
-        mimeType: file.mimetype,
-        fileSize: file.size,
-        position,
-      });
+        imagesToCreate.push({
+          inventoryItemId: inventoryItem.id,
+          userId,
+          imageUrl: uploadResult.imageUrl,
+          driveItemId: uploadResult.driveItemId,
+          fileName: uploadResult.fileName,
+          originalName: file.originalname,
+          mimeType: file.mimetype,
+          fileSize: file.size,
+          position,
+        });
+      } catch (error) {
+        warnings.push({
+          path: "images",
+          message:
+            error.message ||
+            `The image "${file.originalname}" could not be uploaded.`,
+        });
+      }
     }
 
-    await inventoryRepository.createInventoryItemImages(imagesToCreate);
+    if (imagesToCreate.length > 0) {
+      await inventoryRepository.createInventoryItemImages(imagesToCreate);
+    }
   }
 
-  return inventoryRepository.findInventoryItemByIdAndUserId(
+  const item = await inventoryRepository.findInventoryItemByIdAndUserId(
     inventoryItem.id,
     userId,
   );
+
+  return {
+    item,
+    warnings,
+  };
 }
 
-async function getInventoryItems(userId) {
-  return inventoryRepository.findInventoryItemsByUserId(userId);
+async function getInventoryItems(userId, options) {
+  return inventoryRepository.findInventoryItemsByUserId(userId, options);
 }
 
 async function getInventoryItemById(userId, inventoryItemId) {
@@ -184,6 +214,8 @@ async function updateInventoryItem(
     );
   }
 
+  const warnings = [];
+
   let updatedItem = inventoryItem;
 
   const fieldsToUpdate = { ...normalizedPayload };
@@ -207,32 +239,51 @@ async function updateInventoryItem(
     const imagesToInsert = [];
 
     for (const file of files) {
-      const uploadResult = await oneDriveService.uploadInventoryImage({
-        userId,
-        itemId: inventoryItemId,
-        file,
-        position,
-      });
+      try {
+        const uploadResult = await oneDriveService.uploadInventoryImage({
+          userId,
+          itemId: inventoryItemId,
+          file,
+          position,
+        });
 
-      imagesToInsert.push({
-        inventoryItemId,
-        userId,
-        imageUrl: uploadResult.imageUrl,
-        driveItemId: uploadResult.driveItemId,
-        fileName: uploadResult.fileName,
-        originalName: file.originalname,
-        mimeType: file.mimetype,
-        fileSize: file.size,
-        position,
-      });
+        imagesToInsert.push({
+          inventoryItemId,
+          userId,
+          imageUrl: uploadResult.imageUrl,
+          driveItemId: uploadResult.driveItemId,
+          fileName: uploadResult.fileName,
+          originalName: file.originalname,
+          mimeType: file.mimetype,
+          fileSize: file.size,
+          position,
+        });
 
-      position++;
+        position += 1;
+      } catch (error) {
+        warnings.push({
+          path: "images",
+          message:
+            error.message ||
+            `The image "${file.originalname}" could not be uploaded.`,
+        });
+      }
     }
 
-    await inventoryRepository.createInventoryItemImages(imagesToInsert);
+    if (imagesToInsert.length > 0) {
+      await inventoryRepository.createInventoryItemImages(imagesToInsert);
+    }
   }
 
-  return updatedItem;
+  const item = await inventoryRepository.findInventoryItemByIdAndUserId(
+    inventoryItemId,
+    userId,
+  );
+
+  return {
+    item,
+    warnings,
+  };
 }
 
 async function deleteInventoryItem(userId, inventoryItemId) {

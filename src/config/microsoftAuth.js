@@ -9,7 +9,7 @@ const msalClient = new ConfidentialClientApplication({
   auth: {
     clientId: process.env.MICROSOFT_CLIENT_ID,
     clientSecret: process.env.MICROSOFT_CLIENT_SECRET,
-    authority: `https://login.microsoftonline.com/${process.env.MICROSOFT_TENANT_ID || "common"}`,
+    authority: "https://login.microsoftonline.com/common",
   },
 });
 

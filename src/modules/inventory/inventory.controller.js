@@ -7,21 +7,20 @@ const {
 
 async function createInventoryItem(request, response, next) {
   try {
-    console.log("BODY:", request.body);
-    console.log("FILES:", request.files);
-
-    const payload = createInventoryItemSchema.parse(request.body);
-
-    const inventoryItem = await inventoryService.createInventoryItem(
+    const result = await inventoryService.createInventoryItem(
       request.user.id,
-      payload,
+      request.body,
       request.files || [],
     );
 
     return sendSuccessResponse(response, {
       statusCode: 201,
-      message: "Inventory item created successfully",
-      data: inventoryItem,
+      message:
+        result.warnings.length > 0
+          ? "Inventory item created with warnings"
+          : "Inventory item created successfully",
+      data: result.item,
+      warnings: result.warnings,
     });
   } catch (error) {
     return next(error);
@@ -30,13 +29,24 @@ async function createInventoryItem(request, response, next) {
 
 async function getInventoryItems(request, response, next) {
   try {
-    const inventoryItems = await inventoryService.getInventoryItems(
-      request.user.id,
-    );
+    const page = Number(request.query.page) || 1;
+    const limit = Number(request.query.limit) || 10;
+    const search = request.query.search || "";
+    const category = request.query.category || "all";
+    const sortBy = request.query.sortBy || "purchaseDate-desc";
+
+    const result = await inventoryService.getInventoryItems(request.user.id, {
+      page,
+      limit,
+      search,
+      category,
+      sortBy,
+    });
 
     return sendSuccessResponse(response, {
       message: "Inventory items retrieved successfully",
-      data: inventoryItems,
+      data: result.items,
+      pagination: result.pagination,
     });
   } catch (error) {
     return next(error);
@@ -71,10 +81,13 @@ const getInventoryImageContent = async (request, response, next) => {
       imageId,
     });
 
-    response.setHeader("Content-Type", result.contentType || "application/octet-stream");
+    response.setHeader(
+      "Content-Type",
+      result.contentType || "application/octet-stream",
+    );
     response.setHeader(
       "Content-Disposition",
-      `inline; filename="${result.fileName || "image"}"`
+      `inline; filename="${result.fileName || "image"}"`,
     );
 
     if (result.contentLength) {
@@ -111,7 +124,7 @@ async function updateInventoryItem(request, response, next) {
     const payload = updateInventoryItemSchema.parse(request.body);
     const files = request.files || [];
 
-    const inventoryItem = await inventoryService.updateInventoryItem(
+    const result = await inventoryService.updateInventoryItem(
       request.user.id,
       inventoryItemId,
       payload,
@@ -119,8 +132,12 @@ async function updateInventoryItem(request, response, next) {
     );
 
     return sendSuccessResponse(response, {
-      message: "Inventory item updated successfully",
-      data: inventoryItem,
+      message:
+        result.warnings.length > 0
+          ? "Inventory item updated with warnings"
+          : "Inventory item updated successfully",
+      data: result.item,
+      warnings: result.warnings,
     });
   } catch (error) {
     return next(error);
@@ -131,7 +148,10 @@ async function deleteInventoryItem(request, response, next) {
   try {
     const inventoryItemId = Number(request.params.inventoryItemId);
 
-    await inventoryService.deleteInventoryItem(request.user.id, inventoryItemId);
+    await inventoryService.deleteInventoryItem(
+      request.user.id,
+      inventoryItemId,
+    );
 
     return sendSuccessResponse(response, {
       message: "Inventory item deleted successfully",

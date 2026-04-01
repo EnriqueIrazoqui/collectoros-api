@@ -3,6 +3,8 @@ const AppError = require("../common/errors/app-error");
 const userRepository = require("../modules/users/user.repository");
 const { getValidMicrosoftAccessToken } = require("./microsoftToken.service");
 
+const GRAPH_BASE_URL = "https://graph.microsoft.com/v1.0";
+
 function getFileExtension(fileName = "") {
   if (!fileName.includes(".")) {
     return "jpg";
@@ -11,10 +13,64 @@ function getFileExtension(fileName = "") {
   return fileName.split(".").pop().toLowerCase();
 }
 
+function buildGraphHeaders(accessToken, contentType = "application/json") {
+  return {
+    Authorization: `Bearer ${accessToken}`,
+    "Content-Type": contentType,
+  };
+}
+
+function extractGraphErrorMessage(error, fallbackMessage) {
+  return error?.response?.data?.error?.message || fallbackMessage;
+}
+
+function throwFriendlyOneDriveError(error, fallbackMessage) {
+  if (error instanceof AppError) {
+    throw error;
+  }
+
+  const status = error?.response?.status || 500;
+  const graphMessage = extractGraphErrorMessage(error, fallbackMessage);
+
+  console.log("GRAPH STATUS:", error?.response?.status);
+  console.log("GRAPH DATA:", error?.response?.data);
+
+  if (graphMessage.includes("SPO license")) {
+    throw new AppError(
+      "La cuenta de Microsoft conectada no tiene acceso compatible a OneDrive o SharePoint para subir archivos.",
+      400,
+    );
+  }
+
+  if (status === 401 || status === 403) {
+    throw new AppError(
+      "No se pudo acceder a OneDrive. Reconecta tu cuenta de Microsoft.",
+      502,
+    );
+  }
+
+  throw new AppError(graphMessage, status);
+}
+
+async function validateUserDrive(accessToken) {
+  try {
+    const { data } = await axios.get(`${GRAPH_BASE_URL}/me/drive`, {
+      headers: buildGraphHeaders(accessToken),
+    });
+
+    return data;
+  } catch (error) {
+    throwFriendlyOneDriveError(
+      error,
+      "No se pudo acceder al drive del usuario en OneDrive",
+    );
+  }
+}
+
 async function ensureFolder(accessToken, parentPath, folderName) {
   const url = parentPath
-    ? `https://graph.microsoft.com/v1.0/me/drive/root:/${parentPath}:/children`
-    : "https://graph.microsoft.com/v1.0/me/drive/root/children";
+    ? `${GRAPH_BASE_URL}/me/drive/root:/${parentPath}:/children`
+    : `${GRAPH_BASE_URL}/me/drive/root/children`;
 
   try {
     const { data } = await axios.post(
@@ -25,10 +81,7 @@ async function ensureFolder(accessToken, parentPath, folderName) {
         "@microsoft.graph.conflictBehavior": "fail",
       },
       {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          "Content-Type": "application/json",
-        },
+        headers: buildGraphHeaders(accessToken),
       },
     );
 
@@ -41,11 +94,10 @@ async function ensureFolder(accessToken, parentPath, folderName) {
     console.log("ENSURE FOLDER STATUS:", error?.response?.status);
     console.log("ENSURE FOLDER DATA:", error?.response?.data);
 
-    const message =
-      error?.response?.data?.error?.message ||
-      "No se pudo crear la carpeta en OneDrive";
-
-    throw new AppError(message, error?.response?.status || 500);
+    throwFriendlyOneDriveError(
+      error,
+      "No se pudo crear la carpeta en OneDrive",
+    );
   }
 }
 
@@ -61,26 +113,24 @@ async function uploadInventoryImage({ userId, itemId, file, position }) {
     throw new AppError("Usuario no encontrado", 404);
   }
 
+  if (!file?.buffer) {
+    throw new AppError("No se recibió ningún archivo válido", 400);
+  }
+
   const accessToken = await getValidMicrosoftAccessToken(userId);
   const extension = getFileExtension(file.originalname);
   const fileName = `img_${position}_${Date.now()}.${extension}`;
 
   try {
+    await validateUserDrive(accessToken);
     await ensureInventoryFolderPath(accessToken, itemId);
 
-    const uploadUrl = `https://graph.microsoft.com/v1.0/me/drive/root:/CollectorOS/${itemId}/${fileName}:/content`;
-
-    console.log("UPLOAD URL:", uploadUrl);
+    const uploadUrl = `${GRAPH_BASE_URL}/me/drive/root:/CollectorOS/${itemId}/${fileName}:/content`;
 
     const { data } = await axios.put(uploadUrl, file.buffer, {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        "Content-Type": file.mimetype,
-      },
+      headers: buildGraphHeaders(accessToken, file.mimetype),
       maxBodyLength: Infinity,
     });
-
-    console.log("UPLOAD RESPONSE:", data);
 
     return {
       imageUrl: data?.webUrl || "",
@@ -88,14 +138,10 @@ async function uploadInventoryImage({ userId, itemId, file, position }) {
       fileName: data?.name || fileName,
     };
   } catch (error) {
-    console.log("GRAPH STATUS:", error?.response?.status);
-    console.log("GRAPH DATA:", error?.response?.data);
-
-    const message =
-      error?.response?.data?.error?.message ||
-      "No se pudo subir la imagen a OneDrive";
-
-    throw new AppError(message, error?.response?.status || 500);
+    throwFriendlyOneDriveError(
+      error,
+      "No se pudo subir la imagen a OneDrive",
+    );
   }
 }
 
@@ -108,7 +154,7 @@ async function downloadFileByDriveItemId({
     const accessToken = await getValidMicrosoftAccessToken(userId);
 
     const response = await axios.get(
-      `https://graph.microsoft.com/v1.0/me/drive/items/${driveItemId}/content`,
+      `${GRAPH_BASE_URL}/me/drive/items/${driveItemId}/content`,
       {
         responseType: "stream",
         headers: {
@@ -132,6 +178,13 @@ async function downloadFileByDriveItemId({
     const message =
       error?.response?.data?.error?.message ||
       "No se pudo descargar la imagen desde OneDrive";
+
+    if (message.includes("SPO license")) {
+      throw new AppError(
+        "La cuenta de Microsoft conectada no tiene acceso compatible a OneDrive o SharePoint para descargar archivos.",
+        400,
+      );
+    }
 
     if (status === 401 || status === 403) {
       throw new AppError(

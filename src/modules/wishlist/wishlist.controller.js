@@ -26,11 +26,26 @@ async function createWishlistItem(request, response, next) {
 
 async function getWishlistItems(request, response, next) {
   try {
-    const wishlistItems = await wishlistService.getWishlistItems(request.user.id);
+    const page = Number(request.query.page) || 1;
+    const limit = Number(request.query.limit) || 10;
+    const search = request.query.search || "";
+    const category = request.query.category || "all";
+    const priority = request.query.priority || "all";
+    const sortBy = request.query.sortBy || "createdAt-desc";
+
+    const result = await wishlistService.getWishlistItems(request.user.id, {
+      page,
+      limit,
+      search,
+      category,
+      priority,
+      sortBy,
+    });
 
     return sendSuccessResponse(response, {
       message: "Wishlist items retrieved successfully",
-      data: wishlistItems,
+      data: result.items,
+      pagination: result.pagination,
     });
   } catch (error) {
     return next(error);
