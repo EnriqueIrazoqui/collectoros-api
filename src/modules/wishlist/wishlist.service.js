@@ -8,8 +8,8 @@ async function createWishlistItem(userId, payload) {
   });
 }
 
-async function getWishlistItems(userId) {
-  return wishlistRepository.findWishlistItemsByUserId(userId);
+async function getWishlistItems(userId, options) {
+  return wishlistRepository.findWishlistItemsByUserId(userId, options);
 }
 
 async function getWishlistItemById(userId, wishlistItemId) {
