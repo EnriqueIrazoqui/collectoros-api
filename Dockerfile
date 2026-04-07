@@ -12,4 +12,4 @@ ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
 
 EXPOSE 3001
 
-CMD ["node", "src/app/server.js"]
+CMD ["sh", "-c", "npx prisma generate && npx prisma migrate deploy && node src/app/server.js"]
