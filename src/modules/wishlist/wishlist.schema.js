@@ -1,6 +1,6 @@
 const { z } = require("zod");
 
-const createWishlistItemSchema = z.object({
+const baseWishlistItemSchema = {
   name: z
     .string()
     .trim()
@@ -26,12 +26,6 @@ const createWishlistItemSchema = z.object({
     .optional()
     .nullable(),
 
-  currentObservedPrice: z
-    .number({ error: "Current observed price must be a number" })
-    .nonnegative("Current observed price must be greater than or equal to 0")
-    .optional()
-    .nullable(),
-
   priority: z
     .string()
     .trim()
@@ -50,9 +44,18 @@ const createWishlistItemSchema = z.object({
     .max(1000, "Notes must be at most 1000 characters long")
     .optional()
     .nullable(),
-});
+};
 
-const updateWishlistItemSchema = createWishlistItemSchema.partial();
+const createWishlistItemSchema = z.object(baseWishlistItemSchema);
+
+const updateWishlistItemSchema = z.object({
+  ...baseWishlistItemSchema,
+  currentObservedPrice: z
+    .number({ error: "Current observed price must be a number" })
+    .nonnegative("Current observed price must be greater than or equal to 0")
+    .optional()
+    .nullable(),
+}).partial();
 
 module.exports = {
   createWishlistItemSchema,

@@ -5,10 +5,11 @@ const inventoryRoutes = require("../modules/inventory/inventory.routes");
 const priceHistoryRoutes = require("../modules/price-history/price-history.routes");
 const wishlistRoutes = require("../modules/wishlist/wishlist.routes");
 const analyticsRoutes = require("../modules/analytics/analytics.routes");
-const alertsRoutes = require("../modules/alerts/alerts.routes");
+const alertsRoutes = require("../modules/alerts/insights/alerts.routes");
 const forecastRoutes = require("../modules/forecast/forecast.routes");
 const dashboardRoutes = require("../modules/dashboard/dashboard.routes");
 const adminRoutes = require("../modules/admin/admin.routes");
+const wishlistAlertsRoutes = require("../modules/alerts/wishlist-alerts/wishlistAlerts.routes");
 
 const router = express.Router();
 
@@ -22,5 +23,6 @@ router.use("/alerts", alertsRoutes);
 router.use("/forecast", forecastRoutes);
 router.use("/dashboard", dashboardRoutes);
 router.use("/admin", adminRoutes);
+router.use("/alerts", wishlistAlertsRoutes);
 
 module.exports = router;

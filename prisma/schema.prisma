@@ -35,6 +35,7 @@ model User {
   inventoryItems       InventoryItem[]
   wishlistItems        WishlistItem[]
   inventoryItemImages  InventoryItemImage[]
+  wishlistAlerts       WishlistAlert[]
 
   @@map("users")
 }
@@ -96,20 +97,93 @@ model PriceHistory {
 }
 
 model WishlistItem {
-  id                   Int      @id @default(autoincrement())
-  userId               Int      @map("user_id")
-  name                 String
-  category             String
-  description          String?
-  targetPrice          Float?   @map("target_price")
-  currentObservedPrice Float?   @map("current_observed_price")
-  priority             String?
-  purchaseUrl          String?  @map("purchase_url")
-  notes                String?
-  createdAt            DateTime @default(now()) @map("created_at")
-  updatedAt            DateTime @updatedAt @map("updated_at")
+  id                     Int       @id @default(autoincrement())
+  userId                 Int       @map("user_id")
+  name                   String
+  category               String
+  description            String?
+  targetPrice            Float?    @map("target_price")
+  currentObservedPrice   Float?    @map("current_observed_price")
+  priority               String?
+  purchaseUrl            String?   @map("purchase_url")
+  store                  String?   @map("store")
+  notes                  String?
 
-  user User @relation(fields: [userId], references: [id])
+  isTrackingEnabled      Boolean   @default(true) @map("is_tracking_enabled")
+  trackingFrequencyHours Int       @default(24) @map("tracking_frequency_hours")
+  currency               String    @default("MXN")
 
+  lastCheckedAt          DateTime? @map("last_checked_at")
+  nextCheckAt            DateTime? @map("next_check_at")
+  lastPriceChangeAt      DateTime? @map("last_price_change_at")
+
+  consecutiveFailures    Int       @default(0) @map("consecutive_failures")
+  lastCheckStatus        String?   @map("last_check_status")
+  lastErrorMessage       String?   @map("last_error_message")
+  lastAvailability       String?   @map("last_availability")
+  lastProviderSource     String?   @map("last_provider_source")
+
+  createdAt              DateTime  @default(now()) @map("created_at")
+  updatedAt              DateTime  @updatedAt @map("updated_at")
+
+  user                   User                   @relation(fields: [userId], references: [id])
+  priceHistory           WishlistPriceHistory[]
+  alerts                 WishlistAlert[]
+
+  @@index([userId])
+  @@index([store])
+  @@index([isTrackingEnabled, nextCheckAt])
+  @@index([lastCheckedAt])
   @@map("wishlist_items")
 }
+
+model WishlistPriceHistory {
+  id              Int          @id @default(autoincrement())
+  wishlistItemId  Int          @map("wishlist_item_id")
+  price           Float
+  previousPrice   Float?       @map("previous_price")
+  currency        String       @default("MXN")
+  source          String?
+  detectedAt      DateTime     @default(now()) @map("detected_at")
+  createdAt       DateTime     @default(now()) @map("created_at")
+
+  wishlistItem    WishlistItem @relation(fields: [wishlistItemId], references: [id], onDelete: Cascade)
+
+  @@index([wishlistItemId])
+  @@index([wishlistItemId, detectedAt])
+  @@map("wishlist_price_history")
+}
+
+model WishlistAlert {
+  id                Int          @id @default(autoincrement())
+  wishlistItemId    Int          @map("wishlist_item_id")
+  userId            Int          @map("user_id")
+
+  type              String
+  title             String
+  message           String
+
+  status            String       @default("unread")
+  priority          String       @default("medium")
+
+  triggeredPrice    Float?       @map("triggered_price")
+  previousPrice     Float?       @map("previous_price")
+  targetPrice       Float?       @map("target_price")
+  percentageChange  Float?       @map("percentage_change")
+
+  metadata          Json?
+
+  triggeredAt       DateTime     @default(now()) @map("triggered_at")
+  readAt            DateTime?    @map("read_at")
+  createdAt         DateTime     @default(now()) @map("created_at")
+
+  wishlistItem      WishlistItem @relation(fields: [wishlistItemId], references: [id], onDelete: Cascade)
+  user              User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, status, triggeredAt])
+  @@index([wishlistItemId, triggeredAt])
+  @@index([type, triggeredAt])
+  @@map("wishlist_alerts")
+}
+
+
