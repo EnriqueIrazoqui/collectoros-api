@@ -1,9 +1,93 @@
 const prisma = require("../../config/prisma");
+const { getWishlistItemStatus } = require("./utils/wishlistStatus.helper");
 
 async function createWishlistItem(data) {
   return prisma.wishlistItem.create({
     data,
   });
+}
+
+function applySort(items, sortBy) {
+  const sortedItems = [...items];
+
+  switch (sortBy) {
+    case "name-asc":
+      sortedItems.sort((a, b) =>
+        String(a.name || "").localeCompare(String(b.name || "")),
+      );
+      break;
+
+    case "name-desc":
+      sortedItems.sort((a, b) =>
+        String(b.name || "").localeCompare(String(a.name || "")),
+      );
+      break;
+
+    case "targetPrice-desc":
+      sortedItems.sort(
+        (a, b) => Number(b.targetPrice || 0) - Number(a.targetPrice || 0),
+      );
+      break;
+
+    case "targetPrice-asc":
+      sortedItems.sort(
+        (a, b) => Number(a.targetPrice || 0) - Number(b.targetPrice || 0),
+      );
+      break;
+
+    case "observedPrice-desc":
+      sortedItems.sort(
+        (a, b) =>
+          Number(b.currentObservedPrice || 0) -
+          Number(a.currentObservedPrice || 0),
+      );
+      break;
+
+    case "observedPrice-asc":
+      sortedItems.sort(
+        (a, b) =>
+          Number(a.currentObservedPrice || 0) -
+          Number(b.currentObservedPrice || 0),
+      );
+      break;
+
+    case "delta-desc":
+      sortedItems.sort((a, b) => {
+        const deltaA =
+          Number(a.currentObservedPrice || 0) - Number(a.targetPrice || 0);
+        const deltaB =
+          Number(b.currentObservedPrice || 0) - Number(b.targetPrice || 0);
+
+        return deltaA - deltaB;
+      });
+      break;
+
+    case "delta-asc":
+      sortedItems.sort((a, b) => {
+        const deltaA =
+          Number(a.currentObservedPrice || 0) - Number(a.targetPrice || 0);
+        const deltaB =
+          Number(b.currentObservedPrice || 0) - Number(b.targetPrice || 0);
+
+        return deltaB - deltaA;
+      });
+      break;
+
+    case "createdAt-asc":
+      sortedItems.sort(
+        (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+      );
+      break;
+
+    case "createdAt-desc":
+    default:
+      sortedItems.sort(
+        (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+      );
+      break;
+  }
+
+  return sortedItems;
 }
 
 async function findWishlistItemsByUserId(userId, options = {}) {
@@ -13,6 +97,7 @@ async function findWishlistItemsByUserId(userId, options = {}) {
     search = "",
     category = "all",
     priority = "all",
+    status = "all",
     sortBy = "createdAt-desc",
   } = options;
 
@@ -37,6 +122,12 @@ async function findWishlistItemsByUserId(userId, options = {}) {
                 mode: "insensitive",
               },
             },
+            {
+              description: {
+                contains: search,
+                mode: "insensitive",
+              },
+            },
           ],
         }
       : {}),
@@ -44,54 +135,55 @@ async function findWishlistItemsByUserId(userId, options = {}) {
     ...(priority !== "all" ? { priority } : {}),
   };
 
-  let orderBy = { createdAt: "desc" };
-
-  switch (sortBy) {
-    case "name-asc":
-      orderBy = { name: "asc" };
-      break;
-    case "name-desc":
-      orderBy = { name: "desc" };
-      break;
-    case "targetPrice-desc":
-      orderBy = { targetPrice: "desc" };
-      break;
-    case "targetPrice-asc":
-      orderBy = { targetPrice: "asc" };
-      break;
-    case "observedPrice-desc":
-      orderBy = { currentObservedPrice: "desc" };
-      break;
-    case "observedPrice-asc":
-      orderBy = { currentObservedPrice: "asc" };
-      break;
-    case "createdAt-desc":
-      orderBy = { createdAt: "desc" };
-      break;
-    case "createdAt-asc":
-      orderBy = { createdAt: "asc" };
-      break;
-    default:
-      orderBy = { createdAt: "desc" };
-  }
-
-  const [total, items] = await Promise.all([
-    prisma.wishlistItem.count({ where }),
+  const [items, alerts] = await Promise.all([
     prisma.wishlistItem.findMany({
       where,
-      orderBy,
-      skip,
-      take: safeLimit,
+    }),
+    prisma.wishlistAlert.findMany({
+      where: {
+        userId,
+      },
+      select: {
+        id: true,
+        wishlistItemId: true,
+        type: true,
+        status: true,
+        triggeredAt: true,
+      },
+      orderBy: {
+        triggeredAt: "desc",
+      },
     }),
   ]);
 
+  const enrichedItems = items.map((item) => {
+    const derivedStatus = getWishlistItemStatus(item, alerts);
+
+    return {
+      ...item,
+      derivedStatus,
+    };
+  });
+
+  const filteredItems =
+    status === "all"
+      ? enrichedItems
+      : enrichedItems.filter(
+          (item) =>
+            String(item.derivedStatus || "").toLowerCase() ===
+            String(status).toLowerCase(),
+        );
+
+  const sortedItems = applySort(filteredItems, sortBy);
+  const paginatedItems = sortedItems.slice(skip, skip + safeLimit);
+
   return {
-    items,
+    items: paginatedItems,
     pagination: {
       page: safePage,
       limit: safeLimit,
-      total,
-      totalPages: Math.ceil(total / safeLimit),
+      total: sortedItems.length,
+      totalPages: Math.ceil(sortedItems.length / safeLimit),
     },
   };
 }

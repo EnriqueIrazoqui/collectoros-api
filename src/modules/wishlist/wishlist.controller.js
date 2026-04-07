@@ -31,6 +31,7 @@ async function getWishlistItems(request, response, next) {
     const search = request.query.search || "";
     const category = request.query.category || "all";
     const priority = request.query.priority || "all";
+    const status = request.query.status || "all";
     const sortBy = request.query.sortBy || "createdAt-desc";
 
     const result = await wishlistService.getWishlistItems(request.user.id, {
@@ -39,6 +40,7 @@ async function getWishlistItems(request, response, next) {
       search,
       category,
       priority,
+      status,
       sortBy,
     });
 
