@@ -1,6 +1,14 @@
 const prisma = require("../../config/prisma");
 const { getWishlistItemStatus } = require("./utils/wishlistStatus.helper");
 
+async function countWishlistItemsByUserId(userId) {
+  return prisma.wishlistItem.count({
+    where: {
+      userId,
+    },
+  });
+}
+
 async function createWishlistItem(data) {
   return prisma.wishlistItem.create({
     data,
@@ -215,6 +223,7 @@ async function deleteWishlistItem(wishlistItemId) {
 
 module.exports = {
   createWishlistItem,
+  countWishlistItemsByUserId,
   findWishlistItemsByUserId,
   findWishlistItemById,
   updateWishlistItem,

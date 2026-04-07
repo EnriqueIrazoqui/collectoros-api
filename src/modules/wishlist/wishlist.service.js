@@ -3,7 +3,19 @@ const wishlistRepository = require("./wishlist.repository");
 const wishlistTrackingQueue = require("../../jobs/queues/wishlistTrackingQueue");
 const prisma = require("../../config/prisma");
 
+const MAX_WISHLIST_ITEMS_PER_USER = 50;
+
 async function createWishlistItem(userId, payload) {
+  const currentWishlistItemsCount =
+    await wishlistRepository.countWishlistItemsByUserId(userId);
+
+  if (currentWishlistItemsCount >= MAX_WISHLIST_ITEMS_PER_USER) {
+    throw new AppError(
+      "You’ve reached your wishlist limit of 50 items. Remove some items to add new ones.",
+      400,
+    );
+  }
+
   const wishlistItem = await wishlistRepository.createWishlistItem({
     userId,
     ...payload,

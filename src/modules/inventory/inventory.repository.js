@@ -1,5 +1,13 @@
 const prisma = require("../../config/prisma");
 
+async function countInventoryItemsByUserId(userId) {
+  return prisma.inventoryItem.count({
+    where: {
+      userId,
+    },
+  });
+}
+
 async function createInventoryItem(data) {
   return prisma.inventoryItem.create({
     data,
@@ -170,6 +178,7 @@ async function deleteInventoryItem(inventoryItemId) {
 }
 
 module.exports = {
+  countInventoryItemsByUserId,
   createInventoryItem,
   createInventoryItemImages,
   findInventoryItemsByUserId,
