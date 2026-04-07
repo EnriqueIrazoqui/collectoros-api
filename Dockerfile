@@ -7,8 +7,6 @@ RUN npm install
 
 COPY . .
 
-RUN npx prisma generate
-
 ENV NODE_ENV=production
 ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
 
