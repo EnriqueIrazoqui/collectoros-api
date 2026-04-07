@@ -1,4 +1,4 @@
-const prisma = require("../../config/prisma");
+const prisma = require("../../../config/prisma");
 
 async function getWishlistItemsByUserId(userId) {
   return prisma.wishlistItem.findMany({

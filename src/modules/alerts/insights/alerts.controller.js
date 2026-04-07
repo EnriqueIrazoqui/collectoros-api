@@ -1,4 +1,4 @@
-const { sendSuccessResponse } = require("../../common/utils/response");
+const { sendSuccessResponse } = require("../../../common/utils/response");
 const alertsService = require("./alerts.service");
 
 async function getWishlistOpportunities(request, response, next) {

@@ -1,5 +1,5 @@
 const analyticsService = require("../analytics/analytics.service");
-const alertsService = require("../alerts/alerts.service");
+const alertsService = require("../alerts/insights/alerts.service");
 const dashboardRepository = require("./dashboard.repository");
 
 async function getDashboard(userId) {

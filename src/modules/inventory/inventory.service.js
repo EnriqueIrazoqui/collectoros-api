@@ -7,6 +7,7 @@ const MAX_IMAGES = 5;
 const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
 const MAX_FILE_SIZE_MB = 5;
 const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
+const MAX_INVENTORY_ITEMS_PER_USER = 250;
 
 function toNumberOrNull(value) {
   if (value === undefined || value === null || value === "") {
@@ -53,6 +54,16 @@ async function createInventoryItem(userId, payload, files = []) {
   validateInventoryImages(files);
 
   const normalizedPayload = normalizeInventoryPayload(payload);
+
+  const currentInventoryItemsCount =
+    await inventoryRepository.countInventoryItemsByUserId(userId);
+
+  if (currentInventoryItemsCount >= MAX_INVENTORY_ITEMS_PER_USER) {
+    throw new AppError(
+      "You’ve reached your inventory limit of 250 items. Remove some items to add new ones.",
+      400,
+    );
+  }
 
   const inventoryItem = await inventoryRepository.createInventoryItem({
     userId,
