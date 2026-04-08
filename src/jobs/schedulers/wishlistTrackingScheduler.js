@@ -65,7 +65,7 @@ async function initWishlistTrackingScheduler() {
   await wishlistTrackingQueue.upsertJobScheduler(
     "wishlist-due-items-scheduler",
     {
-      every: 10 * 60 * 1000,
+      every: 360 * 60 * 1000,
     },
     {
       name: "schedule-due-wishlist-items",

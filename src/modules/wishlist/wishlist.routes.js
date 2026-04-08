@@ -85,8 +85,74 @@ router.get("/", authMiddleware, wishlistController.getWishlistItems);
  *       404:
  *         description: Wishlist item not found
  */
-router.get("/:wishlistItemId", authMiddleware, wishlistController.getWishlistItemById);
-router.patch("/:wishlistItemId", authMiddleware, wishlistController.updateWishlistItem);
-router.delete("/:wishlistItemId", authMiddleware, wishlistController.deleteWishlistItem);
+router.get(
+  "/:wishlistItemId",
+  authMiddleware,
+  wishlistController.getWishlistItemById,
+);
+
+/**
+ * @openapi
+ * /wishlist/{wishlistItemId}:
+ *   patch:
+ *     summary: Update a wishlist item by id
+ *     tags:
+ *       - Wishlist
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: wishlistItemId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Wishlist item updated successfully
+ *       400:
+ *         description: Invalid request data
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: Wishlist item not found
+ *       500:
+ *         description: Internal server error
+ */
+router.patch(
+  "/:wishlistItemId",
+  authMiddleware,
+  wishlistController.updateWishlistItem,
+);
+
+/**
+ * @openapi
+ * /wishlist/{wishlistItemId}:
+ *   delete:
+ *     summary: Delete a wishlist item by id
+ *     tags:
+ *       - Wishlist
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: wishlistItemId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Wishlist item deleted successfully
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: Wishlist item not found
+ *       500:
+ *         description: Internal server error
+ */
+router.delete(
+  "/:wishlistItemId",
+  authMiddleware,
+  wishlistController.deleteWishlistItem,
+);
 
 module.exports = router;

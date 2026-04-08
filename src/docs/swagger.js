@@ -10,7 +10,7 @@ const swaggerDefinition = {
   },
   servers: [
     {
-      url: "https://collectoros-api.onrender.com/api/v1",
+      url: "https://collectoros-api-docker.onrender.com/api/v1",
       description: "Production server",
     },
     {
