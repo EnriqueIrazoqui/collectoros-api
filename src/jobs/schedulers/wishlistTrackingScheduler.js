@@ -33,6 +33,21 @@ async function scheduleDueWishlistItems() {
   }
 
   const itemIds = dueItems.map((item) => item.id);
+
+  // Reservar temporalmente los items para evitar que otra corrida los vuelva a tomar
+  const reservationDate = new Date(Date.now() + 15 * 60 * 1000);
+
+  await prisma.wishlistItem.updateMany({
+    where: {
+      id: {
+        in: itemIds,
+      },
+    },
+    data: {
+      nextCheckAt: reservationDate,
+    },
+  });
+
   const batches = chunkArray(itemIds, 25);
 
   console.log(
@@ -47,7 +62,8 @@ async function scheduleDueWishlistItems() {
         scheduledAt: now.toISOString(),
       },
       {
-        jobId: `wishlist-batch:${now.getTime()}:${index}`,
+        // jobId estable para evitar duplicados del mismo lote
+        jobId: `wishlist-batch:${index}:${batchItemIds.join("-")}`,
         removeOnComplete: 100,
         removeOnFail: 200,
       },
@@ -65,7 +81,7 @@ async function initWishlistTrackingScheduler() {
   await wishlistTrackingQueue.upsertJobScheduler(
     "wishlist-due-items-scheduler",
     {
-      every: 360 * 60 * 1000,
+      every: 5 * 60 * 1000, // 3 horas
     },
     {
       name: "schedule-due-wishlist-items",
@@ -81,17 +97,9 @@ async function initWishlistTrackingScheduler() {
 }
 
 async function runWishlistTrackingBootstrap() {
-  await wishlistTrackingQueue.add(
-    "schedule-due-wishlist-items",
-    {},
-    {
-      jobId: "wishlist-bootstrap-run",
-      removeOnComplete: true,
-      removeOnFail: 50,
-    },
+  console.log(
+    "[wishlistTrackingScheduler] bootstrap skipped to avoid duplicate scheduling",
   );
-
-  console.log("[wishlistTrackingScheduler] bootstrap queued");
 }
 
 module.exports = {
