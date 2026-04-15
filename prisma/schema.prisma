@@ -37,6 +37,9 @@ model User {
   inventoryItemImages  InventoryItemImage[]
   wishlistAlerts       WishlistAlert[]
 
+  whatsNewCreated       WhatsNew[]          @relation("WhatsNewAuthor")
+  whatsNewViews         UserWhatsNewView[]
+
   @@map("users")
 }
 
@@ -186,4 +189,45 @@ model WishlistAlert {
   @@map("wishlist_alerts")
 }
 
+enum WhatsNewType {
+  feature
+  improvement
+  fix
+  announcement
+}
 
+model WhatsNew {
+  id           Int                 @id @default(autoincrement())
+  version      String              @db.VarChar(50)
+  title        String              @db.VarChar(150)
+  summary      String              @db.VarChar(300)
+  content      String              @db.Text
+  type         WhatsNewType        @default(improvement)
+  isPublished  Boolean             @default(false) @map("is_published")
+  publishedAt  DateTime?           @map("published_at")
+  createdBy    Int?                @map("created_by")
+  createdAt    DateTime            @default(now()) @map("created_at")
+  updatedAt    DateTime            @updatedAt @map("updated_at")
+
+  author       User?               @relation("WhatsNewAuthor", fields: [createdBy], references: [id], onDelete: SetNull)
+  views        UserWhatsNewView[]
+
+  @@index([isPublished, publishedAt])
+  @@index([createdBy])
+  @@map("whats_new")
+}
+
+model UserWhatsNewView {
+  id          Int       @id @default(autoincrement())
+  userId      Int       @map("user_id")
+  whatsNewId  Int       @map("whats_new_id")
+  viewedAt    DateTime  @default(now()) @map("viewed_at")
+
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  whatsNew    WhatsNew  @relation(fields: [whatsNewId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, whatsNewId])
+  @@index([userId, viewedAt])
+  @@index([whatsNewId])
+  @@map("user_whats_new_views")
+}

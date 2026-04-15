@@ -10,6 +10,7 @@ const forecastRoutes = require("../modules/forecast/forecast.routes");
 const dashboardRoutes = require("../modules/dashboard/dashboard.routes");
 const adminRoutes = require("../modules/admin/admin.routes");
 const wishlistAlertsRoutes = require("../modules/alerts/wishlist-alerts/wishlistAlerts.routes");
+const whatsNewRoutes = require("../modules/whats-new/whats-new.routes");
 
 const router = express.Router();
 
@@ -24,5 +25,6 @@ router.use("/forecast", forecastRoutes);
 router.use("/dashboard", dashboardRoutes);
 router.use("/admin", adminRoutes);
 router.use("/alerts", wishlistAlertsRoutes);
+router.use("/whats-new", whatsNewRoutes);
 
 module.exports = router;
