@@ -112,6 +112,11 @@ Available Scripts
   "prisma:studio": "prisma studio"
 }
 
+If you modified the Prisma Schema, go on ith the next instructions:
+npx prisma format (Ordena y valida visualmente el schema.)
+npx prisma migrate dev --name add_example_name (Crea la migración y la aplica a tu base local/dev.)
+npx prisma generate (Regenera el cliente de Prisma con los nuevos campos.)
+
 ## API Base URL
 /api/v1
 

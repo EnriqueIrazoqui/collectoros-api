@@ -1,6 +1,7 @@
 const AppError = require("../../common/errors/app-error");
 const inventoryRepository = require("./inventory.repository");
 const oneDriveService = require("../../services/oneDrive.service");
+const inventoryTrackingQueue = require("../../jobs/queues/inventoryTrackingQueue");
 const prisma = require("../../config/prisma");
 
 const MAX_IMAGES = 5;
@@ -18,6 +19,26 @@ function toNumberOrNull(value) {
   return Number.isNaN(parsed) ? null : parsed;
 }
 
+function toBooleanOrDefault(value, defaultValue = false) {
+  if (value === undefined || value === null || value === "") {
+    return defaultValue;
+  }
+
+  if (typeof value === "boolean") {
+    return value;
+  }
+
+  if (value === "true") {
+    return true;
+  }
+
+  if (value === "false") {
+    return false;
+  }
+
+  return defaultValue;
+}
+
 function normalizeInventoryPayload(payload) {
   return {
     ...payload,
@@ -25,7 +46,23 @@ function normalizeInventoryPayload(payload) {
     purchasePrice: toNumberOrNull(payload.purchasePrice),
     currentEstimatedValue: toNumberOrNull(payload.currentEstimatedValue),
     quantity: toNumberOrNull(payload.quantity) ?? 1,
+
+    trackingUrl: toTrimmedStringOrNull(payload.trackingUrl),
+    store: toTrimmedStringOrNull(payload.store),
+    isTrackingEnabled: toBooleanOrDefault(payload.isTrackingEnabled, false),
+    trackingFrequencyHours:
+      toNumberOrNull(payload.trackingFrequencyHours) ?? 24,
+    currency: toTrimmedStringOrNull(payload.currency) || "MXN",
   };
+}
+
+function toTrimmedStringOrNull(value) {
+  if (value === undefined || value === null || value === "") {
+    return null;
+  }
+
+  const normalizedValue = String(value).trim();
+  return normalizedValue.length > 0 ? normalizedValue : null;
 }
 
 function validateInventoryImages(files = []) {
@@ -117,6 +154,21 @@ async function createInventoryItem(userId, payload, files = []) {
     inventoryItem.id,
     userId,
   );
+
+  if (item?.isTrackingEnabled && item?.trackingUrl && warnings.length === 0) {
+    await inventoryTrackingQueue.add(
+      "process-inventory-batch",
+      {
+        itemIds: [item.id],
+        scheduledAt: new Date().toISOString(),
+      },
+      {
+        jobId: `inventory-immediate-create:${item.id}:${Date.now()}`,
+        removeOnComplete: 20,
+        removeOnFail: 50,
+      },
+    );
+  }
 
   return {
     item,
@@ -227,10 +279,43 @@ async function updateInventoryItem(
       : null;
   }
 
+  if (Object.prototype.hasOwnProperty.call(payload, "purchasePrice")) {
+    normalizedPayload.purchasePrice = toNumberOrNull(payload.purchasePrice);
+  }
+
   if (Object.prototype.hasOwnProperty.call(payload, "currentEstimatedValue")) {
-    normalizedPayload.currentEstimatedValue = Number(
+    normalizedPayload.currentEstimatedValue = toNumberOrNull(
       payload.currentEstimatedValue,
     );
+  }
+
+  if (Object.prototype.hasOwnProperty.call(payload, "quantity")) {
+    normalizedPayload.quantity = toNumberOrNull(payload.quantity);
+  }
+
+  if (Object.prototype.hasOwnProperty.call(payload, "trackingUrl")) {
+    normalizedPayload.trackingUrl = toTrimmedStringOrNull(payload.trackingUrl);
+  }
+
+  if (Object.prototype.hasOwnProperty.call(payload, "store")) {
+    normalizedPayload.store = toTrimmedStringOrNull(payload.store);
+  }
+
+  if (Object.prototype.hasOwnProperty.call(payload, "isTrackingEnabled")) {
+    normalizedPayload.isTrackingEnabled = toBooleanOrDefault(
+      payload.isTrackingEnabled,
+      false,
+    );
+  }
+
+  if (Object.prototype.hasOwnProperty.call(payload, "trackingFrequencyHours")) {
+    normalizedPayload.trackingFrequencyHours =
+      toNumberOrNull(payload.trackingFrequencyHours) ?? 24;
+  }
+
+  if (Object.prototype.hasOwnProperty.call(payload, "currency")) {
+    normalizedPayload.currency =
+      toTrimmedStringOrNull(payload.currency) || "MXN";
   }
 
   const warnings = [];
@@ -298,6 +383,30 @@ async function updateInventoryItem(
     inventoryItemId,
     userId,
   );
+
+  const shouldTriggerTracking =
+    item?.isTrackingEnabled &&
+    item?.trackingUrl &&
+    (Object.prototype.hasOwnProperty.call(payload, "trackingUrl") ||
+      Object.prototype.hasOwnProperty.call(payload, "isTrackingEnabled") ||
+      Object.prototype.hasOwnProperty.call(payload, "trackingFrequencyHours") ||
+      Object.prototype.hasOwnProperty.call(payload, "currency") ||
+      Object.prototype.hasOwnProperty.call(payload, "store"));
+
+  if (shouldTriggerTracking) {
+    await inventoryTrackingQueue.add(
+      "process-inventory-batch",
+      {
+        itemIds: [item.id],
+        scheduledAt: new Date().toISOString(),
+      },
+      {
+        jobId: `inventory-immediate-update:${item.id}:${Date.now()}`,
+        removeOnComplete: 20,
+        removeOnFail: 50,
+      },
+    );
+  }
 
   return {
     item,

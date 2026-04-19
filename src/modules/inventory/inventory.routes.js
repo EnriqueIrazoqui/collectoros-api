@@ -30,6 +30,7 @@ const upload = multer({
  *             type: object
  *             required:
  *               - name
+ *               - category
  *             properties:
  *               name:
  *                 type: string
@@ -48,6 +49,17 @@ const upload = multer({
  *                 type: number
  *               condition:
  *                 type: string
+ *               trackingUrl:
+ *                 type: string
+ *                 format: uri
+ *               store:
+ *                 type: string
+ *               isTrackingEnabled:
+ *                 type: boolean
+ *               trackingFrequencyHours:
+ *                 type: integer
+ *               currency:
+ *                 type: string
  *               images:
  *                 type: array
  *                 items:
@@ -56,6 +68,8 @@ const upload = multer({
  *     responses:
  *       201:
  *         description: Inventory item created successfully
+ *       400:
+ *         description: Invalid request data
  */
 router.post(
   "/",
@@ -84,40 +98,95 @@ router.get("/", authMiddleware, inventoryController.getInventoryItems);
  *     responses:
  *       200:
  *         description: Inventory item retrieved successfully
- *       404:
- *         description: Inventory item not found
- *   patch:
- *     summary: Update an inventory item by id
- *     tags:
- *       - Inventory
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: inventoryItemId
- *         required: true
- *         schema:
- *           type: integer
- *     responses:
- *       200:
- *         description: Inventory item updated successfully
- *       404:
- *         description: Inventory item not found
- *   delete:
- *     summary: Delete an inventory item by id
- *     tags:
- *       - Inventory
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: inventoryItemId
- *         required: true
- *         schema:
- *           type: integer
- *     responses:
- *       200:
- *         description: Inventory item deleted successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 id:
+ *                   type: integer
+ *                 userId:
+ *                   type: integer
+ *                 name:
+ *                   type: string
+ *                 category:
+ *                   type: string
+ *                 description:
+ *                   type: string
+ *                   nullable: true
+ *                 purchasePrice:
+ *                   type: number
+ *                   nullable: true
+ *                 purchaseDate:
+ *                   type: string
+ *                   format: date-time
+ *                   nullable: true
+ *                 currentEstimatedValue:
+ *                   type: number
+ *                   nullable: true
+ *                 quantity:
+ *                   type: integer
+ *                 condition:
+ *                   type: string
+ *                   nullable: true
+ *
+ *                 trackingUrl:
+ *                   type: string
+ *                   format: uri
+ *                   nullable: true
+ *                   description: Product URL used for automatic value tracking
+ *                 store:
+ *                   type: string
+ *                   nullable: true
+ *                   description: Detected or assigned store (Amazon, Mercado Libre, etc.)
+ *                 isTrackingEnabled:
+ *                   type: boolean
+ *                   description: Enables automatic value tracking
+ *                 trackingFrequencyHours:
+ *                   type: integer
+ *                   description: Frequency in hours for tracking checks
+ *                 currency:
+ *                   type: string
+ *                   description: Currency used for valuation (default MXN)
+ *
+ *                 lastCheckedAt:
+ *                   type: string
+ *                   format: date-time
+ *                   nullable: true
+ *                 nextCheckAt:
+ *                   type: string
+ *                   format: date-time
+ *                   nullable: true
+ *                 lastPriceChangeAt:
+ *                   type: string
+ *                   format: date-time
+ *                   nullable: true
+ *
+ *                 consecutiveFailures:
+ *                   type: integer
+ *                 lastCheckStatus:
+ *                   type: string
+ *                   nullable: true
+ *                   description: success | error | not_found | rate_limited | bot_protection
+ *                 lastErrorMessage:
+ *                   type: string
+ *                   nullable: true
+ *                 lastAvailability:
+ *                   type: string
+ *                   nullable: true
+ *                   description: in_stock | out_of_stock | unknown
+ *                 lastProviderSource:
+ *                   type: string
+ *                   nullable: true
+ *                   description: Source used for scraping (e.g., amazon-playwright)
+ *
+ *                 createdAt:
+ *                   type: string
+ *                   format: date-time
+ *                 updatedAt:
+ *                   type: string
+ *                   format: date-time
+ *
  *       404:
  *         description: Inventory item not found
  */
@@ -210,15 +279,34 @@ router.get(
  *           schema:
  *             type: object
  *             properties:
+ *               name:
+ *                 type: string
+ *               category:
+ *                 type: string
  *               description:
  *                 type: string
- *               currentEstimatedValue:
+ *               purchasePrice:
  *                 type: number
- *               condition:
- *                 type: string
  *               purchaseDate:
  *                 type: string
  *                 format: date
+ *               currentEstimatedValue:
+ *                 type: number
+ *               quantity:
+ *                 type: number
+ *               condition:
+ *                 type: string
+ *               trackingUrl:
+ *                 type: string
+ *                 format: uri
+ *               store:
+ *                 type: string
+ *               isTrackingEnabled:
+ *                 type: boolean
+ *               trackingFrequencyHours:
+ *                 type: integer
+ *               currency:
+ *                 type: string
  *               hasChanges:
  *                 type: string
  *               images:
@@ -230,7 +318,7 @@ router.get(
  *       200:
  *         description: Inventory item updated successfully
  *       400:
- *         description: No changes detected
+ *         description: Invalid request data
  *       404:
  *         description: Inventory item not found
  */
