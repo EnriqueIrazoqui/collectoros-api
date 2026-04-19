@@ -60,10 +60,45 @@ const optionalPositiveInt = (fieldLabel) =>
       .optional(),
   );
 
+const optionalBoolean = z.preprocess((value) => {
+  if (value === "" || value === undefined || value === null) {
+    return undefined;
+  }
+
+  if (typeof value === "boolean") {
+    return value;
+  }
+
+  if (value === "true") {
+    return true;
+  }
+
+  if (value === "false") {
+    return false;
+  }
+
+  return value;
+}, z.boolean().optional());
+
 const optionalDateString = z.preprocess(
   emptyStringToNull,
   z.string().trim().nullable().optional(),
 );
+
+const optionalUrlString = (fieldName, maxLength = 1000) =>
+  z.preprocess(
+    emptyStringToNull,
+    z
+      .string()
+      .trim()
+      .max(
+        maxLength,
+        `${fieldName} must be at most ${maxLength} characters long`,
+      )
+      .url(`${fieldName} must be a valid URL`)
+      .nullable()
+      .optional(),
+  );
 
 const createInventoryItemSchema = z.object({
   name: z
@@ -89,13 +124,30 @@ const createInventoryItemSchema = z.object({
   quantity: optionalPositiveInt("Quantity"),
 
   condition: optionalTrimmedString("Condition", 100),
+
+  trackingUrl: optionalUrlString("Tracking URL"),
+  store: optionalTrimmedString("Store", 100),
+  isTrackingEnabled: optionalBoolean,
+  trackingFrequencyHours: optionalPositiveInt("Tracking frequency hours"),
+  currency: optionalTrimmedString("Currency", 10),
 });
 
 const updateInventoryItemSchema = z.object({
+  name: z.string().trim().max(150).optional(),
+  category: z.string().trim().max(100).optional(),
   description: z.string().optional(),
-  currentEstimatedValue: z.string().optional(),
-  condition: z.string().optional(),
+  purchasePrice: z.string().optional(),
   purchaseDate: z.string().optional(),
+  currentEstimatedValue: z.string().optional(),
+  quantity: z.string().optional(),
+  condition: z.string().optional(),
+
+  trackingUrl: z.string().optional(),
+  store: z.string().optional(),
+  isTrackingEnabled: z.string().optional(),
+  trackingFrequencyHours: z.string().optional(),
+  currency: z.string().optional(),
+
   hasChanges: z.string().optional(),
 });
 
