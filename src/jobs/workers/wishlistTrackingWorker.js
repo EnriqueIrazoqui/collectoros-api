@@ -65,11 +65,53 @@ const wishlistTrackingWorker = new Worker(
         const result = await fetchObservedPrice(item);
 
         if (!result.success) {
-          throw new Error(
-            `[${result.errorCode || "FETCH_ERROR"}] ${
-              result.message || "Could not fetch observed price"
-            }`,
+          const failures = (item.consecutiveFailures || 0) + 1;
+          const errorCode = result.errorCode || "FETCH_ERROR";
+          const errorMessage =
+            result.message || "Could not fetch observed price";
+
+          console.error(
+            `[wishlistTrackingWorker] Error processing item ${item.id}: [${errorCode}] ${errorMessage}`,
           );
+
+          let nextCheckAt = calculateRetryCheckAt(
+            failures,
+            item.trackingFrequencyHours,
+          );
+
+          let lastCheckStatus = wishlistCheckStatus.ERROR;
+
+          // Tratamiento especial para Mercado Libre bot protection
+          if (errorCode === "BOT_PROTECTION") {
+            const botProtectionRetryMinutes = [30, 120, 360, 720];
+            const retryMinutes =
+              botProtectionRetryMinutes[
+                Math.min(failures - 1, botProtectionRetryMinutes.length - 1)
+              ];
+
+            nextCheckAt = new Date(Date.now() + retryMinutes * 60 * 1000);
+            lastCheckStatus = wishlistCheckStatus.BOT_PROTECTION;
+          }
+
+          await prisma.wishlistItem.update({
+            where: {
+              id: item.id,
+            },
+            data: {
+              lastCheckedAt: new Date(),
+              nextCheckAt,
+              consecutiveFailures: failures,
+              lastCheckStatus,
+              lastErrorMessage: `[${errorCode}] ${errorMessage}`,
+              lastAvailability: "unknown",
+            },
+          });
+
+          console.log(
+            `[wishlistTrackingWorker] Retry scheduled for item ${item.id}`,
+          );
+
+          continue;
         }
 
         const oldPrice = item.currentObservedPrice;

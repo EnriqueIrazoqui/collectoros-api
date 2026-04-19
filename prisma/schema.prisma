@@ -21,21 +21,24 @@ model User {
   createdAt             DateTime  @default(now()) @map("created_at")
   updatedAt             DateTime  @updatedAt @map("updated_at")
 
-  role                  String    @default("user")
-  isActive              Boolean   @default(true) @map("is_active")
+  role     String  @default("user")
+  isActive Boolean @default(true) @map("is_active")
 
   microsoftAccountId      String?   @map("microsoft_account_id")
   microsoftAccessToken    String?   @map("microsoft_access_token")
   microsoftRefreshToken   String?   @map("microsoft_refresh_token")
   microsoftTokenExpiresAt DateTime? @map("microsoft_token_expires_at")
 
-  hasSeenWelcome           Boolean   @default(false) @map("has_seen_welcome")
-  welcomeSeenAt            DateTime? @map("welcome_seen_at")
+  hasSeenWelcome Boolean   @default(false) @map("has_seen_welcome")
+  welcomeSeenAt  DateTime? @map("welcome_seen_at")
 
-  inventoryItems       InventoryItem[]
-  wishlistItems        WishlistItem[]
-  inventoryItemImages  InventoryItemImage[]
-  wishlistAlerts       WishlistAlert[]
+  inventoryItems      InventoryItem[]
+  wishlistItems       WishlistItem[]
+  inventoryItemImages InventoryItemImage[]
+  wishlistAlerts      WishlistAlert[]
+
+  whatsNewCreated WhatsNew[]         @relation("WhatsNewAuthor")
+  whatsNewViews   UserWhatsNewView[]
 
   @@map("users")
 }
@@ -51,32 +54,53 @@ model InventoryItem {
   currentEstimatedValue Float?    @map("current_estimated_value")
   quantity              Int       @default(1)
   condition             String?
-  createdAt             DateTime  @default(now()) @map("created_at")
-  updatedAt             DateTime  @updatedAt @map("updated_at")
 
-  user         User           @relation(fields: [userId], references: [id])
+  trackingUrl            String? @map("tracking_url")
+  store                  String? @map("store")
+  isTrackingEnabled      Boolean @default(false) @map("is_tracking_enabled")
+  trackingFrequencyHours Int     @default(24) @map("tracking_frequency_hours")
+  currency               String  @default("MXN")
+
+  lastCheckedAt     DateTime? @map("last_checked_at")
+  nextCheckAt       DateTime? @map("next_check_at")
+  lastPriceChangeAt DateTime? @map("last_price_change_at")
+
+  consecutiveFailures Int     @default(0) @map("consecutive_failures")
+  lastCheckStatus     String? @map("last_check_status")
+  lastErrorMessage    String? @map("last_error_message")
+  lastAvailability    String? @map("last_availability")
+  lastProviderSource  String? @map("last_provider_source")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user         User                 @relation(fields: [userId], references: [id])
   priceHistory PriceHistory[]
-  images                InventoryItemImage[]
+  images       InventoryItemImage[]
 
+  @@index([userId])
+  @@index([store])
+  @@index([isTrackingEnabled, nextCheckAt])
+  @@index([lastCheckedAt])
   @@map("inventory_items")
 }
 
 model InventoryItemImage {
-  id             Int           @id @default(autoincrement())
-  inventoryItemId Int          @map("inventory_item_id")
-  userId         Int           @map("user_id")
-  imageUrl       String        @map("image_url")
-  driveItemId    String        @map("drive_item_id")
-  fileName       String        @map("file_name")
-  originalName   String?       @map("original_name")
-  mimeType       String?       @map("mime_type")
-  fileSize       Int?          @map("file_size")
-  position       Int           @default(1)
-  createdAt      DateTime      @default(now()) @map("created_at")
-  updatedAt      DateTime      @updatedAt @map("updated_at")
+  id              Int      @id @default(autoincrement())
+  inventoryItemId Int      @map("inventory_item_id")
+  userId          Int      @map("user_id")
+  imageUrl        String   @map("image_url")
+  driveItemId     String   @map("drive_item_id")
+  fileName        String   @map("file_name")
+  originalName    String?  @map("original_name")
+  mimeType        String?  @map("mime_type")
+  fileSize        Int?     @map("file_size")
+  position        Int      @default(1)
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
 
-  inventoryItem  InventoryItem @relation(fields: [inventoryItemId], references: [id], onDelete: Cascade)
-  user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  inventoryItem InventoryItem @relation(fields: [inventoryItemId], references: [id], onDelete: Cascade)
+  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([inventoryItemId, position])
   @@index([inventoryItemId])
@@ -85,50 +109,54 @@ model InventoryItemImage {
 }
 
 model PriceHistory {
-  id        Int      @id @default(autoincrement())
-  itemId    Int      @map("item_id")
-  price     Float
-  source    String?
-  createdAt DateTime @default(now()) @map("created_at")
+  id            Int      @id @default(autoincrement())
+  itemId        Int      @map("item_id")
+  price         Float
+  previousPrice Float?   @map("previous_price")
+  currency      String   @default("MXN")
+  source        String?
+  createdAt     DateTime @default(now()) @map("created_at")
 
   item InventoryItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
 
+  @@index([itemId])
+  @@index([itemId, createdAt])
   @@map("price_history")
 }
 
 model WishlistItem {
-  id                     Int       @id @default(autoincrement())
-  userId                 Int       @map("user_id")
-  name                   String
-  category               String
-  description            String?
-  targetPrice            Float?    @map("target_price")
-  currentObservedPrice   Float?    @map("current_observed_price")
-  priority               String?
-  purchaseUrl            String?   @map("purchase_url")
-  store                  String?   @map("store")
-  notes                  String?
+  id                   Int     @id @default(autoincrement())
+  userId               Int     @map("user_id")
+  name                 String
+  category             String
+  description          String?
+  targetPrice          Float?  @map("target_price")
+  currentObservedPrice Float?  @map("current_observed_price")
+  priority             String?
+  purchaseUrl          String? @map("purchase_url")
+  store                String? @map("store")
+  notes                String?
 
-  isTrackingEnabled      Boolean   @default(true) @map("is_tracking_enabled")
-  trackingFrequencyHours Int       @default(24) @map("tracking_frequency_hours")
-  currency               String    @default("MXN")
+  isTrackingEnabled      Boolean @default(true) @map("is_tracking_enabled")
+  trackingFrequencyHours Int     @default(24) @map("tracking_frequency_hours")
+  currency               String  @default("MXN")
 
-  lastCheckedAt          DateTime? @map("last_checked_at")
-  nextCheckAt            DateTime? @map("next_check_at")
-  lastPriceChangeAt      DateTime? @map("last_price_change_at")
+  lastCheckedAt     DateTime? @map("last_checked_at")
+  nextCheckAt       DateTime? @map("next_check_at")
+  lastPriceChangeAt DateTime? @map("last_price_change_at")
 
-  consecutiveFailures    Int       @default(0) @map("consecutive_failures")
-  lastCheckStatus        String?   @map("last_check_status")
-  lastErrorMessage       String?   @map("last_error_message")
-  lastAvailability       String?   @map("last_availability")
-  lastProviderSource     String?   @map("last_provider_source")
+  consecutiveFailures Int     @default(0) @map("consecutive_failures")
+  lastCheckStatus     String? @map("last_check_status")
+  lastErrorMessage    String? @map("last_error_message")
+  lastAvailability    String? @map("last_availability")
+  lastProviderSource  String? @map("last_provider_source")
 
-  createdAt              DateTime  @default(now()) @map("created_at")
-  updatedAt              DateTime  @updatedAt @map("updated_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
-  user                   User                   @relation(fields: [userId], references: [id])
-  priceHistory           WishlistPriceHistory[]
-  alerts                 WishlistAlert[]
+  user         User                   @relation(fields: [userId], references: [id])
+  priceHistory WishlistPriceHistory[]
+  alerts       WishlistAlert[]
 
   @@index([userId])
   @@index([store])
@@ -138,16 +166,16 @@ model WishlistItem {
 }
 
 model WishlistPriceHistory {
-  id              Int          @id @default(autoincrement())
-  wishlistItemId  Int          @map("wishlist_item_id")
-  price           Float
-  previousPrice   Float?       @map("previous_price")
-  currency        String       @default("MXN")
-  source          String?
-  detectedAt      DateTime     @default(now()) @map("detected_at")
-  createdAt       DateTime     @default(now()) @map("created_at")
+  id             Int      @id @default(autoincrement())
+  wishlistItemId Int      @map("wishlist_item_id")
+  price          Float
+  previousPrice  Float?   @map("previous_price")
+  currency       String   @default("MXN")
+  source         String?
+  detectedAt     DateTime @default(now()) @map("detected_at")
+  createdAt      DateTime @default(now()) @map("created_at")
 
-  wishlistItem    WishlistItem @relation(fields: [wishlistItemId], references: [id], onDelete: Cascade)
+  wishlistItem WishlistItem @relation(fields: [wishlistItemId], references: [id], onDelete: Cascade)
 
   @@index([wishlistItemId])
   @@index([wishlistItemId, detectedAt])
@@ -155,30 +183,30 @@ model WishlistPriceHistory {
 }
 
 model WishlistAlert {
-  id                Int          @id @default(autoincrement())
-  wishlistItemId    Int          @map("wishlist_item_id")
-  userId            Int          @map("user_id")
+  id             Int @id @default(autoincrement())
+  wishlistItemId Int @map("wishlist_item_id")
+  userId         Int @map("user_id")
 
-  type              String
-  title             String
-  message           String
+  type    String
+  title   String
+  message String
 
-  status            String       @default("unread")
-  priority          String       @default("medium")
+  status   String @default("unread")
+  priority String @default("medium")
 
-  triggeredPrice    Float?       @map("triggered_price")
-  previousPrice     Float?       @map("previous_price")
-  targetPrice       Float?       @map("target_price")
-  percentageChange  Float?       @map("percentage_change")
+  triggeredPrice   Float? @map("triggered_price")
+  previousPrice    Float? @map("previous_price")
+  targetPrice      Float? @map("target_price")
+  percentageChange Float? @map("percentage_change")
 
-  metadata          Json?
+  metadata Json?
 
-  triggeredAt       DateTime     @default(now()) @map("triggered_at")
-  readAt            DateTime?    @map("read_at")
-  createdAt         DateTime     @default(now()) @map("created_at")
+  triggeredAt DateTime  @default(now()) @map("triggered_at")
+  readAt      DateTime? @map("read_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
 
-  wishlistItem      WishlistItem @relation(fields: [wishlistItemId], references: [id], onDelete: Cascade)
-  user              User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  wishlistItem WishlistItem @relation(fields: [wishlistItemId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, status, triggeredAt])
   @@index([wishlistItemId, triggeredAt])
@@ -186,4 +214,45 @@ model WishlistAlert {
   @@map("wishlist_alerts")
 }
 
+enum WhatsNewType {
+  feature
+  improvement
+  fix
+  announcement
+}
 
+model WhatsNew {
+  id          Int          @id @default(autoincrement())
+  version     String       @db.VarChar(50)
+  title       String       @db.VarChar(150)
+  summary     String       @db.VarChar(300)
+  content     String       @db.Text
+  type        WhatsNewType @default(improvement)
+  isPublished Boolean      @default(false) @map("is_published")
+  publishedAt DateTime?    @map("published_at")
+  createdBy   Int?         @map("created_by")
+  createdAt   DateTime     @default(now()) @map("created_at")
+  updatedAt   DateTime     @updatedAt @map("updated_at")
+
+  author User?              @relation("WhatsNewAuthor", fields: [createdBy], references: [id], onDelete: SetNull)
+  views  UserWhatsNewView[]
+
+  @@index([isPublished, publishedAt])
+  @@index([createdBy])
+  @@map("whats_new")
+}
+
+model UserWhatsNewView {
+  id         Int      @id @default(autoincrement())
+  userId     Int      @map("user_id")
+  whatsNewId Int      @map("whats_new_id")
+  viewedAt   DateTime @default(now()) @map("viewed_at")
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  whatsNew WhatsNew @relation(fields: [whatsNewId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, whatsNewId])
+  @@index([userId, viewedAt])
+  @@index([whatsNewId])
+  @@map("user_whats_new_views")
+}

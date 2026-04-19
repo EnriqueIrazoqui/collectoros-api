@@ -3,6 +3,17 @@ const getTextBySelectors = require("../helpers/getTextBySelectors");
 const parseMercadoLibrePrice = require("./parseMercadoLibrePrice");
 const normalizeMercadoLibreAvailability = require("./normalizeMercadoLibreAvailability");
 
+const BOT_TEXT_PATTERNS = [
+  "captcha",
+  "robot",
+  "verifica que no eres un robot",
+  "verifica que eres humano",
+  "confirma que eres humano",
+  "valida que no eres un robot",
+  "security check",
+  "acceso denegado",
+];
+
 const mercadoLibreProvider = {
   id: "mercadolibre",
 
@@ -42,14 +53,43 @@ const mercadoLibreProvider = {
       await page.waitForTimeout(2500);
 
       const title = await page.title();
+      const currentUrl = page.url();
 
+      const bodyText = await page.locator("body").innerText().catch(() => "");
       const normalizedTitle = String(title || "").toLowerCase();
+      const normalizedBody = String(bodyText || "")
+        .toLowerCase()
+        .replace(/\s+/g, " ");
 
-      if (
-        normalizedTitle.includes("captcha") ||
-        normalizedTitle.includes("robot") ||
-        normalizedTitle.includes("verifica que no eres un robot")
-      ) {
+      const hasBotText = BOT_TEXT_PATTERNS.some(
+        (pattern) =>
+          normalizedTitle.includes(pattern) || normalizedBody.includes(pattern),
+      );
+
+      const productRootSelectors = [
+        ".ui-pdp-container",
+        ".ui-pdp-title",
+        ".ui-pdp-price",
+        '[data-testid="price-part"]',
+        'meta[itemprop="price"]',
+      ];
+
+      const hasProductRoot = await Promise.any(
+        productRootSelectors.map(async (selector) => {
+          try {
+            return (await page.locator(selector).count()) > 0;
+          } catch {
+            return false;
+          }
+        }),
+      ).catch(() => false);
+
+      const looksBlocked =
+        hasBotText ||
+        currentUrl.toLowerCase().includes("captcha") ||
+        (!hasProductRoot && normalizedBody.length > 0 && normalizedBody.length < 1200);
+
+      if (looksBlocked) {
         return {
           success: false,
           errorCode: "BOT_PROTECTION",
@@ -57,6 +97,12 @@ const mercadoLibreProvider = {
           store: "mercadolibre",
           source: "mercadolibre-playwright",
           availability: "unknown",
+          raw: {
+            title,
+            currentUrl,
+            bodyPreview: normalizedBody.slice(0, 500),
+            purchaseUrl,
+          },
         };
       }
 
@@ -103,6 +149,7 @@ const mercadoLibreProvider = {
           availability,
           raw: {
             title,
+            currentUrl,
             priceText,
             availabilityText,
             purchaseUrl,
@@ -117,9 +164,7 @@ const mercadoLibreProvider = {
         store: "mercadolibre",
         source: "mercadolibre-playwright",
         availability,
-
         title,
-
         metadata: {
           rawPriceText: priceText,
           rawAvailabilityText: availabilityText,

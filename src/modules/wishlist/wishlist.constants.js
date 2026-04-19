@@ -16,6 +16,7 @@ const wishlistCheckStatus = {
   ERROR: "error",
   NOT_FOUND: "not_found",
   RATE_LIMITED: "rate_limited",
+  BOT_PROTECTION: "bot_protection",
 };
 
 module.exports = {

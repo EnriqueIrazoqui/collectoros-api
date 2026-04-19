@@ -7,9 +7,11 @@ const {
 
 async function createInventoryItem(request, response, next) {
   try {
+    const payload = createInventoryItemSchema.parse(request.body);
+
     const result = await inventoryService.createInventoryItem(
       request.user.id,
-      request.body,
+      payload,
       request.files || [],
     );
 
