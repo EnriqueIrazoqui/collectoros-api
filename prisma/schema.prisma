@@ -256,3 +256,34 @@ model UserWhatsNewView {
   @@index([whatsNewId])
   @@map("user_whats_new_views")
 }
+
+enum AccessRequestStatus {
+  pending
+  approved
+  rejected
+}
+
+model AccessRequest {
+  id       Int                 @id @default(autoincrement())
+  name     String
+  email    String
+  interest String?
+  message  String?
+  status   AccessRequestStatus @default(pending)
+
+  reviewedAt DateTime? @map("reviewed_at")
+  adminNotes String?   @map("admin_notes")
+
+  invitationTokenHash  String?   @map("invitation_token_hash")
+  invitationExpiresAt  DateTime? @map("invitation_expires_at")
+  invitationAcceptedAt DateTime? @map("invitation_accepted_at")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([email])
+  @@index([status])
+  @@index([createdAt])
+  @@index([invitationTokenHash])
+  @@map("access_requests")
+}

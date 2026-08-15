@@ -16,8 +16,8 @@ async function findUserById(userId) {
   });
 }
 
-async function createUser(data) {
-  return prisma.user.create({
+async function createUser(data, db = prisma) {
+  return db.user.create({
     data,
   });
 }

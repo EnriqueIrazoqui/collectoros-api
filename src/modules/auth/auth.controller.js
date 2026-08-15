@@ -1,7 +1,11 @@
 const authService = require("./auth.service");
-const { registerSchema, loginSchema } = require("./auth.schema");
 const { sendSuccessResponse } = require("../../common/utils/response");
-const { refreshSchema } = require("./auth.schema");
+const {
+  registerSchema,
+  loginSchema,
+  refreshSchema,
+  acceptInvitationSchema,
+} = require("./auth.schema");
 
 async function register(request, response, next) {
   try {
@@ -11,6 +15,22 @@ async function register(request, response, next) {
     return sendSuccessResponse(response, {
       statusCode: 201,
       message: "User registered successfully",
+      data: user,
+    });
+  } catch (error) {
+    return next(error);
+  }
+}
+
+async function acceptInvitation(request, response, next) {
+  try {
+    const payload = acceptInvitationSchema.parse(request.body);
+
+    const user = await authService.acceptInvitation(payload);
+
+    return sendSuccessResponse(response, {
+      statusCode: 201,
+      message: "Invitation accepted successfully",
       data: user,
     });
   } catch (error) {
@@ -91,6 +111,7 @@ async function markWelcomeSeen(request, response, next) {
 
 module.exports = {
   register,
+  acceptInvitation,
   login,
   refresh,
   logout,
