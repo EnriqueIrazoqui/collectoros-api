@@ -14,14 +14,12 @@ const {
 } = require("../jobs/schedulers/inventoryTrackingScheduler");
 
 const app = createApp();
-const port = process.env.PORT;
+const port = Number(process.env.PORT) || 3001;
 
-app.listen(port, async () => {
+app.listen(port, "0.0.0.0", async () => {
   console.log(`CollectorsOS API running on port ${port}`);
 
   await scheduleAnalyticsJobs();
-
-  // wishlist
   await runWishlistTrackingBootstrap();
   await initWishlistTrackingScheduler();
 
