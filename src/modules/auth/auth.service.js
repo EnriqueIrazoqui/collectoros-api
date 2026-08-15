@@ -1,9 +1,17 @@
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
+const crypto = require("crypto");
+
 
 const env = require("../../config/env");
 const authRepository = require("./auth.repository");
 const AppError = require("../../common/errors/app-error");
+
+const accessRequestRepository = require(
+  "../access-request/access-request.repository",
+);
+
+const prisma = require("../../config/prisma");
 
 const ACCESS_TOKEN_EXPIRES_IN = "15m";
 const REFRESH_TOKEN_EXPIRES_IN = "7d";
@@ -49,6 +57,92 @@ async function registerUser(payload) {
     email: payload.email,
     passwordHash,
     displayName: payload.displayName,
+  });
+
+  return {
+    id: user.id,
+    email: user.email,
+    displayName: user.displayName,
+    createdAt: user.createdAt,
+  };
+}
+
+async function acceptInvitation(payload) {
+  const invitationTokenHash = crypto
+    .createHash("sha256")
+    .update(payload.token)
+    .digest("hex");
+
+  const accessRequest =
+    await accessRequestRepository.findAccessRequestByInvitationTokenHash(
+      invitationTokenHash,
+    );
+
+  if (!accessRequest) {
+    throw new AppError("Invalid invitation token", 400);
+  }
+
+  if (accessRequest.status !== "approved") {
+    throw new AppError(
+      "This access request has not been approved",
+      403,
+    );
+  }
+
+  if (accessRequest.invitationAcceptedAt) {
+    throw new AppError(
+      "This invitation has already been used",
+      409,
+    );
+  }
+
+  if (
+    !accessRequest.invitationExpiresAt ||
+    accessRequest.invitationExpiresAt < new Date()
+  ) {
+    throw new AppError(
+      "This invitation has expired",
+      410,
+    );
+  }
+
+  const existingUser = await authRepository.findUserByEmail(
+    accessRequest.email,
+  );
+
+  if (existingUser) {
+    throw new AppError(
+      "Email is already registered",
+      409,
+    );
+  }
+
+  const passwordHash = await bcrypt.hash(
+    payload.password,
+    10,
+  );
+
+  const user = await prisma.$transaction(async (tx) => {
+    const createdUser = await authRepository.createUser(
+      {
+        email: accessRequest.email,
+        passwordHash,
+        displayName: accessRequest.name,
+      },
+      tx,
+    );
+
+    await accessRequestRepository.updateAccessRequestStatus(
+      accessRequest.id,
+      {
+        invitationAcceptedAt: new Date(),
+        invitationTokenHash: null,
+        invitationExpiresAt: null,
+      },
+      tx,
+    );
+
+    return createdUser;
   });
 
   return {
@@ -224,6 +318,7 @@ async function markWelcomeAsSeen(userId) {
 
 module.exports = {
   registerUser,
+  acceptInvitation,
   loginUser,
   getCurrentUser,
   logoutUser,

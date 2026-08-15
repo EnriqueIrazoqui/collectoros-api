@@ -19,9 +19,19 @@ const refreshSchema = z.object({
   refreshToken: z.string().min(1, "Refresh token is required"),
 });
 
+const acceptInvitationSchema = z.object({
+  token: z
+    .string()
+    .min(1, "Invitation token is required"),
+
+  password: z
+    .string()
+    .min(8, "Password must be at least 8 characters long"),
+});
 
 module.exports = {
     registerSchema,
     loginSchema,
     refreshSchema,
+    acceptInvitationSchema,
 };

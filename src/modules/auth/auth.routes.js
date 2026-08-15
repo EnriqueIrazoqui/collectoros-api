@@ -43,6 +43,48 @@ router.post("/register", authController.register);
 
 /**
  * @openapi
+ * /auth/accept-invitation:
+ *   post:
+ *     summary: Accept an approved access invitation and create a user account
+ *     tags:
+ *       - Auth
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - token
+ *               - password
+ *             properties:
+ *               token:
+ *                 type: string
+ *                 example: 4d31c8f0e5b2...
+ *               password:
+ *                 type: string
+ *                 format: password
+ *                 minLength: 8
+ *                 example: Password123!
+ *     responses:
+ *       201:
+ *         description: Invitation accepted and user account created successfully
+ *       400:
+ *         description: Invalid request data or invitation token
+ *       403:
+ *         description: Access request has not been approved
+ *       409:
+ *         description: Invitation already used or email already registered
+ *       410:
+ *         description: Invitation has expired
+ */
+router.post(
+  "/accept-invitation",
+  authController.acceptInvitation,
+);
+
+/**
+ * @openapi
  * /auth/login:
  *   post:
  *     summary: Login a user and return an access token
